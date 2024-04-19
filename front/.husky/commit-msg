@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+if [[ "$OSTYPE" == "msys" ]]; then
+        cd front && npx.cmd --no -- commitlint --edit ${1}
+else
+        cd front && npx --no -- commitlint --edit ${1}
+fi
