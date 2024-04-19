@@ -1,0 +1,22 @@
+name: Linting and testing
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to use for the image"
+        required: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          #Branch of PR or input tag or default to main
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Install dependencies
+        run: cd front && npm install
+      - name: Lint code
+        run: cd front && npm run lint
