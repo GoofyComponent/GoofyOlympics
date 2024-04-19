@@ -1,5 +1,9 @@
 # GoofyOlympics
 
+## Contexte
+
+La première partie du projet répond au critere mentionnée sur ce fichier [projet.pdf](./projet.pdf)
+
 ## Conventions
 
 ### Commits
