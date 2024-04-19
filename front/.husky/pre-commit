@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+if [[ "$OSTYPE" == "msys" ]]; then
+        cd front && npm.cmd run lint:fix
+else
+        cd front && npm run lint:fix
+fi
