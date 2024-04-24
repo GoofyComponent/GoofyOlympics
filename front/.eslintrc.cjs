@@ -7,7 +7,14 @@ module.exports = {
     'plugin:react-hooks/recommended',
     'plugin:prettier/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', 'tailwind.config.js', 'src/components/ui'],
+  ignorePatterns: [
+    'dist',
+    '.eslintrc.cjs',
+    'tailwind.config.js',
+    'src/components/ui',
+    'src/components/mirage',
+    'src/components/mirage/*/**',
+  ],
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh', 'simple-import-sort', 'prettier'],
   rules: {
