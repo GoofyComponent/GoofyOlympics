@@ -1,0 +1,19 @@
+{
+  "name": "csv_convertor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "neat-csv": "^7.0.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.8.2"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "GoofyOlympics DB",
+      "Group": "goofyolympics",
+      "Port": 5432,
+      "Username": "postgres",
+      "Host": "postgres_goofy_olympics",
+      "SSLMode": "prefer",
+      "MaintenanceDB": "postgres"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+services:
+  postgres_goofy_olympics:
+    container_name: postgres_goofy_olympics
+    image: postgres:13.4-bullseye
+    restart: on-failure
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-goofy_olympics}
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "5438:5432"
+    volumes:
+      - ./docker/postgres-data:/var/lib/postgresql/data:rw
+      - ./database/jo_export.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      - ./database/noc_export.sql:/docker-entrypoint-initdb.d/create_tables2.sql
+  pgadmin:
+    container_name: pgadmin_goofy_olympics
+    image: dpage/pgadmin4
+    restart: on-failure
+    depends_on:
+      - postgres_goofy_olympics
+    ports:
+      - "5439:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-user@mail.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: ${PGADMIN_CONFIG_SERVER_MODE:-False}
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: ${PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED:-False}
+    volumes:
+      - ./docker/postgres-data:/var/lib/pgadmin:rw
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+    user: root
+    configs:
+      - source: servers.json
+        target: /pgadmin4/servers.json
+      - source: pgpass
+        target: /pgpass
+
+configs:
+  pgpass:
+    content: postgres_goofy_olympics:5432:goofy_olympics:postgres:postgres
+  servers.json:
+    content: |
+      {"Servers": {"1": {
+        "Group": "Servers",
+        "Name": "Goofy Olympics DB",
+        "Host": "postgres_goofy_olympics",
+        "Port": 5432,
+        "MaintenanceDB": "goofy_olympics",
+        "Username": "postgres",
+        "PassFile": "/pgpass",
+        "SSLMode": "prefer"
+      }}}
