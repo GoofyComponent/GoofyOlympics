@@ -1,0 +1,30 @@
+name: Build olympics-api
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to use for the image"
+        required: true
+  push:
+    branches:
+      - main
+    paths:
+      - "api/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build API
+        uses: aevea/action-kaniko@master
+        with:
+          image: destcom/olympics-api
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          tag: ${{ github.event.inputs.tag || github.sha }}
+          tag_with_latest: true
+          path: ./api
+          build_file: ./api.Dockerfile

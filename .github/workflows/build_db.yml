@@ -1,0 +1,27 @@
+name: Build olympics-db
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to use for the image"
+        required: true
+  push:
+    branches:
+      - main
+    paths:
+      - "database/**"
+
+jobs:
+  deploy_db:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: build DB
+        run: |
+          rm -rf /Apps/containerDatas/olympics/docker
+          docker-compose -f db.docker-compose.yml down
+          echo `POSTGRES_PATH=/Apps/containerDatas/olympics/docker/postgres
+                PGADMIN_PATH=/Apps/containerDatas/olympics/docker/pgadmin` > .env
+          docker-compose -f db.docker-compose.yml up -d
