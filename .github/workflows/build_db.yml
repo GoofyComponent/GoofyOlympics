@@ -1,27 +1,30 @@
-name: Build olympics-db
+name: Build olympics-api
 
 on:
   workflow_call:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to use for the image"
-        required: true
   push:
     branches:
       - main
     paths:
       - "database/**"
+      - "api/**"
 
 jobs:
   deploy_db:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - name: build DB
+      - name: Remove old cached db data
         run: |
           rm -rf /Apps/containerDatas/olympics/docker
-          docker-compose -f db.docker-compose.yml down
-          echo `POSTGRES_PATH=/Apps/containerDatas/olympics/docker/postgres
-                PGADMIN_PATH=/Apps/containerDatas/olympics/docker/pgadmin` > .env
-          docker-compose -f db.docker-compose.yml up -d
+      - name: Remove old containers
+        run: |
+          docker-compose -f api.docker-compose.yml down
+          docker image prune -f
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.API_ENV_FILE }}" >> api.env
+      - name: build DB
+        run: |
+          docker-compose --env-file api.env -f api.docker-compose.yml up --build -d

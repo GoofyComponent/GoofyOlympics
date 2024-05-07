@@ -17,6 +17,10 @@ services:
       - DB_PORT=${DB_PORT:-5438}
     networks:
       - join
+<<<<<<<< HEAD:local.docker-compose.yml
+========
+      - hosted
+>>>>>>>> b5dc7b8 (ci: add worflows):api.docker-compose.yml
   postgres_goofy_olympics:
     container_name: postgres_goofy_olympics
     image: postgres:13.4-bullseye
@@ -95,3 +99,8 @@ configs:
 networks:
   join:
     driver: bridge
+<<<<<<<< HEAD:local.docker-compose.yml
+========
+  hosted:
+    external: true
+>>>>>>>> b5dc7b8 (ci: add worflows):api.docker-compose.yml
