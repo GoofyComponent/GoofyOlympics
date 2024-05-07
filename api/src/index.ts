@@ -22,6 +22,10 @@ if (process.env.NODE_ENV === "production") {
     database: "goofy_olympics",
   };
 }
+
+console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
+console.log("dbConfig: ", dbConfig);
+
 const { Client } = pg;
 const client = new Client(dbConfig);
 await client.connect();

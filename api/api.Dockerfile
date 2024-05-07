@@ -1,9 +1,11 @@
-FROM node:lts-alpine20.12.2 as build
+FROM node:20.12.0-alpine
 
 WORKDIR /app
 COPY package.json ./
 
-RUN npm ci
+RUN npm install
 COPY . .
 
-RUN npm start
+ENV NODE_ENV=production
+
+CMD ["npm", "start"]
