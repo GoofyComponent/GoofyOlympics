@@ -7,10 +7,14 @@ export function MockServer({ environment = 'development' }) {
     factories: {},
     seeds(/* server */) {},
     routes() {
-      this.namespace = 'api';
-      this.get('/test', () => {
-        return { data: 'test' };
-      });
+      // this.namespace = 'api';
+      // this.get('/test', () => {
+      //   return { data: 'test' };
+      // });
+
+      this.passthrough('https://jsonplaceholder.typicode.com/**');
+      // Ajoutez cette ligne pour permettre à toutes les autres requêtes de passer
+      this.passthrough();
     },
   });
 }
