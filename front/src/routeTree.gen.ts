@@ -11,28 +11,107 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as LoginImport } from './routes/login'
 import { Route as AppImport } from './routes/app'
+import { Route as AuthImport } from './routes/_auth'
+import { Route as IndexImport } from './routes/index'
+import { Route as AuthHomeImport } from './routes/_auth.home'
+import { Route as AuthAthletesImport } from './routes/_auth.athletes'
+import { Route as AuthAnalyzeImport } from './routes/_auth.analyze'
+import { Route as AuthAthletesIdImport } from './routes/_auth.athletes.$id'
 
 // Create/Update Routes
+
+const LoginRoute = LoginImport.update({
+  path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AppRoute = AppImport.update({
   path: '/app',
   getParentRoute: () => rootRoute,
 } as any)
 
+const AuthRoute = AuthImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const IndexRoute = IndexImport.update({
+  path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthHomeRoute = AuthHomeImport.update({
+  path: '/home',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthAthletesRoute = AuthAthletesImport.update({
+  path: '/athletes',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthAnalyzeRoute = AuthAnalyzeImport.update({
+  path: '/analyze',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthAthletesIdRoute = AuthAthletesIdImport.update({
+  path: '/$id',
+  getParentRoute: () => AuthAthletesRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/_auth': {
+      preLoaderRoute: typeof AuthImport
+      parentRoute: typeof rootRoute
+    }
     '/app': {
       preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
+    }
+    '/login': {
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/_auth/analyze': {
+      preLoaderRoute: typeof AuthAnalyzeImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/athletes': {
+      preLoaderRoute: typeof AuthAthletesImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/home': {
+      preLoaderRoute: typeof AuthHomeImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/athletes/$id': {
+      preLoaderRoute: typeof AuthAthletesIdImport
+      parentRoute: typeof AuthAthletesImport
     }
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([AppRoute])
+export const routeTree = rootRoute.addChildren([
+  IndexRoute,
+  AuthRoute.addChildren([
+    AuthAnalyzeRoute,
+    AuthAthletesRoute.addChildren([AuthAthletesIdRoute]),
+    AuthHomeRoute,
+  ]),
+  AppRoute,
+  LoginRoute,
+])
 
 /* prettier-ignore-end */
