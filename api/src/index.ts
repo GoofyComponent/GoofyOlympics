@@ -64,7 +64,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.get("/", (req: Request, res: Response) => {
   res.send(
-    "Welcome to the unofficial Olympics API, please use the /api endpoint to access the data. For more information, visit: no-url-to-provide.yet"
+    "Welcome to the unofficial Olympics API, please use the /api endpoint to access the data. For more information, visit: https://api-olympics.stroyco.eu/api-docs/"
   );
 });
 
