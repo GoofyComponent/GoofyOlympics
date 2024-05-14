@@ -1,6 +1,10 @@
 import express, { Express, Request, Response, json } from "express";
 import { matchedData, query, validationResult } from "express-validator";
 import helmet from "helmet";
+
+import swaggerUi from "swagger-ui-express";
+import swaggerJSDocs from "swagger-jsdoc";
+
 import pg from "pg";
 
 const LIMIT = 10;
@@ -23,9 +27,6 @@ if (process.env.NODE_ENV === "production") {
   };
 }
 
-console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
-console.log("dbConfig: ", dbConfig);
-
 const { Client } = pg;
 const client = new Client(dbConfig);
 await client.connect();
@@ -36,12 +37,149 @@ app.use(json());
 app.use(helmet());
 app.disable("x-powered-by");
 
+const SWAGGER_OPTIONS = {
+  failOnErrors: true,
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Unofficial Olympics API",
+      description:
+        "An unofficial API for the Olympics, providing data on athletes and regions since 1896 to 2016, data from the Olympics dataset on Kaggle (https://www.kaggle.com/datasets/heesoo37/120-years-of-olympic-history-athletes-and-results).",
+      version: "1.0.0",
+    },
+  },
+  apis: ["./src/index.ts"],
+};
+const swaggerSpec = swaggerJSDocs(SWAGGER_OPTIONS);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Page d'accueil de l'API
+ *     responses:
+ *       200:
+ *         description: Message de bienvenue
+ */
 app.get("/", (req: Request, res: Response) => {
   res.send(
     "Welcome to the unofficial Olympics API, please use the /api endpoint to access the data. For more information, visit: no-url-to-provide.yet"
   );
 });
 
+/**
+ * @swagger
+ * /api/athletes:
+ *   get:
+ *     summary: Récupère une liste d'athlètes
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: La page à récupérer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *         description: Le nombre d'athlètes à récupérer par page
+ *       - in: query
+ *         name: id
+ *         schema:
+ *          type: string
+ *         description: L'identifiant de l'athlète
+ *       - in: query
+ *         name: name
+ *         schema:
+ *          type: string
+ *         description: Filtrer par nom
+ *       - in: query
+ *         name: sex
+ *         schema:
+ *          type: string
+ *         description: Filtrer par sexe
+ *       - in: query
+ *         name: age
+ *         schema:
+ *          type: string
+ *         description: Filtrer par âge
+ *       - in: query
+ *         name: team
+ *         schema:
+ *          type: string
+ *         description: Filtrer par équipe
+ *       - in: query
+ *         name: noc
+ *         schema:
+ *          type: string
+ *         description: Filtrer par NOC (National Olympic Committee)
+ *       - in: query
+ *         name: games
+ *         schema:
+ *          type: string
+ *         description: Filtrer par jeux olympiques
+ *       - in: query
+ *         name: year
+ *         schema:
+ *          type: string
+ *         description: Filtrer par année des jeux olympiques
+ *       - in: query
+ *         name: season
+ *         schema:
+ *          type: enum
+ *          enum: [Summer, Winter]
+ *         description: Filtrer par saison des jeux olympiques (été ou hiver)
+ *       - in: query
+ *         name: city
+ *         schema:
+ *          type: string
+ *         description: Filtrer par ville hôte des jeux olympiques
+ *       - in: query
+ *         name: sport
+ *         schema:
+ *          type: string
+ *         description: Filtrer par sport
+ *       - in: query
+ *         name: event
+ *         schema:
+ *          type: string
+ *         description: Filtrer par événement
+ *       - in: query
+ *         name: medal
+ *         schema:
+ *           type: enum
+ *           enum: [Gold, Silver, Bronze]
+ *         description: Filtrer par médaille
+ *       - in: query
+ *         name: height
+ *         schema:
+ *           type: integer
+ *         description: Filtrer par taille
+ *       - in: query
+ *         name: weight
+ *         schema:
+ *           type: integer
+ *         description: Filtrer par poids
+ *       - in: query
+ *         name: optionSort
+ *         schema:
+ *           type: enum
+ *           enum: [less, more, equal]
+ *           default: equal
+ *         description: L'option de tri pour la taille et le poids
+ *     responses:
+ *       200:
+ *         description: Une liste d'athlètes
+ *       500:
+ *         description: Erreur interne du serveur
+ */
 app.get(
   "/api/athletes",
   query("page").default(1).isInt({ min: 1 }).escape(),
@@ -116,8 +254,6 @@ app.get(
       }
       query += ` LIMIT ${limit} OFFSET ${offset}`;
 
-      console.log("query: ", query);
-
       try {
         athletes = await client.query(query, values);
       } catch (error) {
@@ -128,7 +264,6 @@ app.get(
       return res.send({
         athletes: athletes.rows,
         currentPage: page,
-        //maxPage: MAX_PAGE,
         currentLimit: limit,
       });
     }
@@ -136,6 +271,54 @@ app.get(
   }
 );
 
+/**
+ * @swagger
+ * /api/regions:
+ *   get:
+ *     summary: Récupère une liste de regions du NOC (National Olympic Committee)
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: La page à récupérer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *         description: Le nombre de régions à récupérer par page
+ *       - in: query
+ *         name: id
+ *         schema:
+ *           type: string
+ *         description: L'identifiant de la région
+ *       - in: query
+ *         name: noc
+ *         schema:
+ *           type: string
+ *         description: Le NOC (National Olympic Committee) de la région
+ *       - in: query
+ *         name: region
+ *         schema:
+ *           type: string
+ *         description: Le nom du Pays
+ *       - in: query
+ *         name: notes
+ *         schema:
+ *           type: string
+ *         description: Notes sur la région
+ *     responses:
+ *       200:
+ *         description: Une liste de régions
+ *       500:
+ *         description: Erreur interne du serveur
+ */
 app.get(
   "/api/regions",
   query("page").default(1).isInt({ min: 1 }).escape(),
