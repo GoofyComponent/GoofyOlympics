@@ -23,7 +23,9 @@ function App() {
   return (
     <>
       <DoorClosed size={64} />
-      <p className="text-3xl font-bold  text-red-600 underline">sdfqdd</p>
+      <p className="text-3xl font-bold  text-red-600 underline">
+        Ceci est un test pour s'assurer que tout s'actualise correctement
+      </p>
     </>
   );
 }
