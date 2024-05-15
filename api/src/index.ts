@@ -366,6 +366,69 @@ app.get(
   }
 );
 
+/**
+ * @swagger
+ * /api/medals:
+ *   get:
+ *     summary: Récupère une liste de médailles
+ *     parameters:
+ *       - in: query
+ *         name: noc
+ *         schema:
+ *           type: string
+ *         description: Filtrer par NOC (National Olympic Committee)
+ *     responses:
+ *       200:
+ *         description: Une liste de médailles
+ *       500:
+ *         description: Erreur interne du serveur
+ */
+app.get(
+  "/api/medals",
+  query(["noc"]).optional().escape(),
+  async (req: Request, res: Response) => {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const data = matchedData(req);
+      let values: string[] = [];
+      let medals: any;
+
+      let query =
+        "SELECT count(medal), medal, noc FROM public.athlete_events GROUP BY medal, noc";
+
+      if (data.noc) {
+        query += " HAVING noc = $1";
+        values.push(data.noc);
+      }
+
+      try {
+        medals = await client.query(query, values);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      let pays: any = {};
+      medals.rows.forEach((element: any) => {
+        pays[element.noc] = pays[element.noc] || [];
+        if (element.medal === "NA") {
+          return;
+        }
+
+        pays[element.noc].push({
+          medal: element.medal,
+          count: element.count,
+        });
+      });
+
+      return res.send({
+        medals: pays,
+      });
+    }
+    return res.send({ errors: result.array() });
+  }
+);
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
