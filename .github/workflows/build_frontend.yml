@@ -1,0 +1,25 @@
+name: Build olympics-frontend-image
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to use for the image"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build API
+        uses: aevea/action-kaniko@v0.13.0
+        with:
+          image: destcom/olympics-frontend
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          tag: ${{ github.event.inputs.tag || github.sha }}
+          tag_with_latest: true
+          path: ./front
+          build_file: ./front.Dockerfile

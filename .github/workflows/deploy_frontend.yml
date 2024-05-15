@@ -1,0 +1,21 @@
+name: Deploy olympics-frontend
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove old containers
+        run: |
+          docker-compose -f website.docker-compose.yml down
+          docker image prune -f
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.WEBSITE_ENV_FILE }}" >> website.env
+      - name: Deploy website
+        run: |
+          docker-compose --env-file website.env -f website.docker-compose.yml -p "olympics-frontend" up --build -d
