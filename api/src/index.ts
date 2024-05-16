@@ -1,6 +1,9 @@
+import bcrypt from "bcrypt";
+
 import express, { Express, Request, Response, json } from "express";
-import { matchedData, query, validationResult } from "express-validator";
+import { body, matchedData, query, validationResult } from "express-validator";
 import helmet from "helmet";
+import session from "express-session";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDocs from "swagger-jsdoc";
@@ -31,11 +34,51 @@ const { Client } = pg;
 const client = new Client(dbConfig);
 await client.connect();
 
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    mail VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL
+  )
+`;
+const checkUserQuery = "SELECT * FROM users WHERE mail = $1";
+const insertQuery = "INSERT INTO users (mail, password) VALUES ($1, $2)";
+const defaultMail = "test@test.test";
+const defaultPassword = "testpassword";
+
+try {
+  await client.query(createTableQuery);
+  const user = await client.query(checkUserQuery, [defaultMail]);
+  if (user.rows.length === 0) {
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    await client.query(insertQuery, [defaultMail, hashedPassword]);
+  }
+} catch (error) {
+  console.error("Error executing query", error.stack);
+}
+
 const app: Express = express();
 const port = process.env.PORT || 3000;
+const expiryDate = new Date(Date.now() + 60 * 60 * 1000);
 app.use(json());
 app.use(helmet());
 app.disable("x-powered-by");
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "MySecretIsLame",
+    name: "sessionId",
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      expires: expiryDate,
+    },
+  })
+);
 
 const SWAGGER_OPTIONS = {
   failOnErrors: true,
@@ -66,6 +109,37 @@ app.get("/", (req: Request, res: Response) => {
   res.send(
     "Welcome to the unofficial Olympics API, please use the /api endpoint to access the data. For more information, visit: https://api-olympics.stroyco.eu/api-docs/"
   );
+});
+
+/**
+ * @swagger
+ * /protected:
+ *   get:
+ *     summary: Récupère du contenu protégé
+ *     description: Renvoie du contenu protégé si l'utilisateur est connecté
+ *     responses:
+ *       200:
+ *         description: L'utilisateur est connecté et a accès au contenu protégé
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Protected content
+ *       401:
+ *         description: Non autorisé
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Unauthorized
+ */
+app.get("/protected", (req: Request, res: Response) => {
+  // @ts-expect-error - Session not typed on Request
+  if (req.session.userId) {
+    return res.send("Protected content");
+  }
+
+  return res.status(401).send("Unauthorized");
 });
 
 /**
@@ -423,6 +497,187 @@ app.get(
 
       return res.send({
         medals: pays,
+      });
+    }
+    return res.send({ errors: result.array() });
+  }
+);
+
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Connecte un utilisateur existant
+ *     description: Connecte un utilisateur avec un email et un mot de passe
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: L'email de l'utilisateur
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 description: Le mot de passe de l'utilisateur
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: L'utilisateur est connecté avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: Logged in
+ *       401:
+ *         description: Non autorisé
+ *       500:
+ *         description: Erreur interne du serveur
+ */
+app.post(
+  "/auth/login",
+  body("email").isEmail().trim().escape(),
+  body("password").isLength({ min: 6 }).escape(),
+  async (req: Request, res: Response) => {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const data = matchedData(req);
+
+      let user: any;
+      let query = "SELECT * FROM users WHERE mail = $1";
+
+      try {
+        user = await client.query(query, [data.email]);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      if (user.rows.length > 0) {
+        const match = await bcrypt.compare(
+          data.password,
+          user.rows[0].password
+        );
+        if (match) {
+          // @ts-expect-error - Session not typed on Request
+          req.session.userId = user.rows[0].id;
+          return res.send("Logged in");
+        }
+      }
+
+      return res.status(401).send({
+        status: "Unauthorized",
+        reason: "Invalid email or password",
+      });
+    }
+    return res.send({ errors: result.array() });
+  }
+);
+
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Enregistre un nouvel utilisateur
+ *     description: Crée un nouvel utilisateur avec un email et un mot de passe
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: L'email de l'utilisateur
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 description: Le mot de passe de l'utilisateur
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: L'utilisateur a été créé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: User created
+ *                 user:
+ *                   type: string
+ *                   example: user@example.com
+ *       403:
+ *         description: L'enregistrement est actuellement fermé
+ *       500:
+ *         description: Erreur interne du serveur
+ */
+app.post(
+  "/auth/register",
+  body("email")
+    .isEmail()
+    .trim()
+    .escape()
+    .custom(async (value) => {
+      let user: any;
+      let query = "SELECT * FROM users WHERE mail = $1";
+
+      try {
+        user = await client.query(query, [value]);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return Promise.reject("Internal Server Error");
+      }
+
+      if (user.rows.length > 0) {
+        return Promise.reject("Email already in use");
+      }
+    }),
+  body("password").isLength({ min: 6 }).escape(),
+  async (req: Request, res: Response) => {
+    const IS_REGISTER_OPEN = process.env.IS_REGISTER_OPEN || true;
+
+    if (!IS_REGISTER_OPEN) {
+      return res.status(403).send("Forbidden");
+    }
+
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const data = matchedData(req);
+
+      let insertQuery = "INSERT INTO users (mail, password) VALUES ($1, $2)";
+
+      try {
+        await client.query(createTableQuery);
+
+        const hashedPassword = await bcrypt.hash(data.password, 10);
+
+        const user = await client.query(insertQuery, [
+          data.email,
+          hashedPassword,
+        ]);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      return res.send({
+        status: "User created",
+        user: data.email,
       });
     }
     return res.send({ errors: result.array() });
