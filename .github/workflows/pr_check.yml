@@ -3,10 +3,6 @@ on:
   pull_request:
   workflow_call:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to use for the image"
-        required: true
 
 jobs:
   lint:
