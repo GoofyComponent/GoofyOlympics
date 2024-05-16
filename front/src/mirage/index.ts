@@ -13,6 +13,9 @@ export function MockServer({ environment = 'development' }) {
       // });
 
       this.passthrough('https://jsonplaceholder.typicode.com/**');
+      this.passthrough('https://cors-anywhere.stroyco.eu/**');
+      this.passthrough('https://api-olympics.stroyco.eu/**');
+      // https://api-olympics.stroyco.eu/
       // Ajoutez cette ligne pour permettre à toutes les autres requêtes de passer
       this.passthrough();
     },

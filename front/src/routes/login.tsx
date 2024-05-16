@@ -33,13 +33,15 @@ function LoginComponent() {
   const onFormSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     const data = new FormData(evt.currentTarget);
-    const fieldValue = data.get('username');
+    const usernameValue = data.get('username');
+    const passwordValue = data.get('password');
 
-    if (!fieldValue) return;
+    if (!usernameValue || !passwordValue) return;
 
-    const username = fieldValue.toString();
+    const username = usernameValue.toString();
+    const password = passwordValue.toString();
 
-    auth.login(username, 'user');
+    auth.login(username, password);
 
     router.invalidate().finally(() => {
       navigate({ to: search.redirect || fallback });
@@ -65,6 +67,14 @@ function LoginComponent() {
               name="username"
               placeholder="Enter your name"
               type="text"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              required
+            />
+            <input
+              id="password-input"
+              name="password"
+              placeholder="Enter your password"
+              type="password"
               className="w-full p-2 border border-gray-300 rounded-md"
               required
             />
