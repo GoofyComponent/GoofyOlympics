@@ -1,6 +1,6 @@
 import { Athlete } from '@/model/athlete';
 
-let athletes: Athlete[] = null!;
+const athletes: Athlete[] = null!;
 
 // let athletesPromise: Promise<void>;
 
@@ -9,9 +9,9 @@ const ensureAthletes = async () => {
     const athletesPromise = fetch('https://api-olympics.stroyco.eu/protected', {
       credentials: 'include',
     });
-    athletes = await athletesPromise.then((res) => {
+    await athletesPromise.then((res) => {
       console.log('res', res);
-      return res.json();
+      return;
     });
   } catch (error) {
     console.error('An error occurred while fetching athletes:', error);
