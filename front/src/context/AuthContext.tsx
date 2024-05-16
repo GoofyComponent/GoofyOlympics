@@ -32,9 +32,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const login = React.useCallback((username: string) => {
-    setStoredUser(username);
-    setUser(username);
+  const login = React.useCallback((username: string, password: string) => {
+    fetch('https://api-olympics.stroyco.eu/auth/login', {
+      credentials: 'include',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: username, password: password }),
+    })
+      .then(() => {
+        setStoredUser(username);
+        setUser(username);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   }, []);
 
   return (

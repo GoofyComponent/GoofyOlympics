@@ -12,7 +12,6 @@ export const Route = createFileRoute('/_auth/analyze')({
 
 function AthletesRoute() {
   const { entities } = Route.useLoaderData();
-
-  console.log(entities);
+  console.log('entities', entities);
   return <Comparison />;
 }

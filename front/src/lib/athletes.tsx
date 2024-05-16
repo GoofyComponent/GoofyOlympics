@@ -6,8 +6,13 @@ let athletes: Athlete[] = null!;
 
 const ensureAthletes = async () => {
   try {
-    const athletesPromise = fetch('https://jsonplaceholder.typicode.com/users');
-    athletes = await athletesPromise.then((res) => res.json());
+    const athletesPromise = fetch('https://api-olympics.stroyco.eu/protected', {
+      credentials: 'include',
+    });
+    athletes = await athletesPromise.then((res) => {
+      console.log('res', res);
+      return res.json();
+    });
   } catch (error) {
     console.error('An error occurred while fetching athletes:', error);
   }
