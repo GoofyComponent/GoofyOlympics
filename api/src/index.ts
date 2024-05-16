@@ -68,6 +68,7 @@ const allowedOrigins = [
 app.use(json());
 app.use(
   cors({
+    credentials: true,
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
@@ -92,6 +93,7 @@ app.use(
     resave: true,
     saveUninitialized: true,
     cookie: {
+      sameSite: "none",
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       expires: expiryDate,
