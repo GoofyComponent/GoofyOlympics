@@ -7,9 +7,10 @@ import { MapPin, MapPinned } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { MapRef, Marker } from 'react-map-gl/maplibre';
 
-import { MainTitle } from '@/components/title';
+import { MainTitle, SubTitle } from '@/components/title';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   HoverCard,
   HoverCardContent,
@@ -39,6 +40,10 @@ export const Paris2024Page = () => {
     longitude: 2.333333,
     latitude: 48.866667,
     zoom: 11.5,
+  });
+  const [selectedFilter, setSelectedFilter] = useState<Record<string, boolean>>({
+    olympic: true,
+    paralympic: true,
   });
 
   const mapRef = useRef<MapRef | null>(null);
@@ -81,15 +86,55 @@ export const Paris2024Page = () => {
             <TabsTrigger value="map">Interactive map</TabsTrigger>
             <TabsTrigger value="calendar">Events calendar</TabsTrigger>
           </TabsList>
-          <TabsContent
-            value="map"
-            className="w-full flex flex-col lg:flex-row lg:justify-between"
-          >
-            <MapComponent onPinClick={handlePinClick} mapRef={mapRef} />
-            <LocationSection
-              selectedLocation={selectedLocation}
-              onCardClick={handleCardClick}
-            />
+          <TabsContent value="map" className="w-full ">
+            <SubTitle className="py-2">Competition sites</SubTitle>
+            <div className="flex py-2">
+              <p className="font-light mr-2">Filters :</p>
+              <div className="flex flex-wrap gap-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="olympic"
+                    checked={selectedFilter.olympic}
+                    onCheckedChange={(checked: boolean) =>
+                      setSelectedFilter({ ...selectedFilter, olympic: checked })
+                    }
+                  />
+                  <label
+                    htmlFor="terms2"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Olympics venues
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="paralympic"
+                    checked={selectedFilter.paralympic}
+                    onCheckedChange={(checked: boolean) =>
+                      setSelectedFilter({ ...selectedFilter, paralympic: checked })
+                    }
+                  />
+                  <label
+                    htmlFor="terms2"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Paralympics venues
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col lg:flex-row lg:justify-between">
+              <MapComponent
+                onPinClick={handlePinClick}
+                mapRef={mapRef}
+                selectedFilter={selectedFilter}
+              />
+              <LocationSection
+                selectedLocation={selectedLocation}
+                onCardClick={handleCardClick}
+                selectedFilter={selectedFilter}
+              />
+            </div>
           </TabsContent>
           <TabsContent value="calendar">Change your password here.</TabsContent>
         </Tabs>
@@ -101,9 +146,11 @@ export const Paris2024Page = () => {
 const MapComponent = ({
   onPinClick,
   mapRef,
+  selectedFilter,
 }: {
   onPinClick: (location: Location) => void;
   mapRef: React.RefObject<MapRef>;
+  selectedFilter: Record<string, boolean>;
 }) => {
   const {
     events_location,
@@ -111,9 +158,19 @@ const MapComponent = ({
     events_location: Location[];
   } = useLoaderData({ from: '/_mainapp/2024' });
 
+  const filteredEvents = useMemo(
+    () =>
+      events_location.filter(
+        (location) =>
+          (selectedFilter.olympic && location.category_id === 'venue-olympic') ||
+          (selectedFilter.paralympic && location.category_id === 'venue-paralympic'),
+      ),
+    [events_location, selectedFilter],
+  );
+
   const pins = useMemo(
     () =>
-      events_location.map((location, index) => (
+      filteredEvents.map((location, index) => (
         <Marker
           longitude={location.point_geo.lon}
           latitude={location.point_geo.lat}
@@ -150,7 +207,7 @@ const MapComponent = ({
           </HoverCard>
         </Marker>
       )),
-    [events_location, onPinClick],
+    [filteredEvents, onPinClick],
   );
 
   return (
@@ -181,9 +238,11 @@ const MapComponent = ({
 const LocationSection = ({
   selectedLocation,
   onCardClick,
+  selectedFilter,
 }: {
   selectedLocation: Location | null;
   onCardClick: (location: Location) => void;
+  selectedFilter: Record<string, boolean>;
 }) => {
   const {
     events_location,
@@ -191,9 +250,19 @@ const LocationSection = ({
     events_location: Location[];
   } = useLoaderData({ from: '/_mainapp/2024' });
 
+  const filteredEvents = useMemo(
+    () =>
+      events_location.filter(
+        (location) =>
+          (selectedFilter.olympic && location.category_id === 'venue-olympic') ||
+          (selectedFilter.paralympic && location.category_id === 'venue-paralympic'),
+      ),
+    [events_location, selectedFilter],
+  );
+
   return (
-    <section className="w-full lg:w-1/2 ml-2 grid grid-cols-2 gap-2 overflow-auto h-[35rem]">
-      {events_location.map((location, index) => (
+    <section className="w-full lg:w-1/2 ml-2 grid grid-cols-2 gap-2 overflow-auto h-[35rem] mt-4 lg:mt-auto">
+      {filteredEvents.map((location, index) => (
         <LocationCard
           key={`${index}_${location.code_site}`}
           location={location}
@@ -201,6 +270,11 @@ const LocationSection = ({
           onCardClick={() => onCardClick(location)}
         />
       ))}
+      {filteredEvents.length === 0 && (
+        <p className="text-center text-lg font-light">
+          No venues found for the selected filters.
+        </p>
+      )}
     </section>
   );
 };
