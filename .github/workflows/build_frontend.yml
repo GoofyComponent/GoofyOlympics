@@ -23,3 +23,4 @@ jobs:
           tag_with_latest: true
           path: ./front
           build_file: ./front.Dockerfile
+          extra_args: --build-arg VITE_MAPTILER_PUBLIC=${{ secrets.VITE_MAPTILER_PUBLIC }}

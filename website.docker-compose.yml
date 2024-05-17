@@ -4,8 +4,9 @@ services:
     image: destcom/olympics-frontend:latest
     pull_policy: always
     restart: unless-stopped
-    environment:
-      - API_URL=${API_URL:-https://api-olympics.stroyco.eu/}
+    #environment:
+    #- API_URL=${API_URL:-https://api-olympics.stroyco.eu/}
+    #- VITE_MAPTILER_PUBLIC=${VITE_MAPTILER_PUBLIC}
     networks:
       - hosted
 

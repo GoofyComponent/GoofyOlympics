@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 function App() {
   useEffect(() => {
-    const aaa = 'aaaaaaaaa';
+    const aaa = 'aaaaaa';
 
     console.log('MODE', import.meta.env.MODE);
 

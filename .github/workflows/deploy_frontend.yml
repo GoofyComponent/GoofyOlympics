@@ -20,10 +20,7 @@ jobs:
           else
               echo "No previous containers found, continuing..."
           fi
-      - name: Create .env file
-        run: |
-          echo "${{ secrets.WEBSITE_ENV_FILE }}" >> website.env
       - name: Deploy website
         run: |
-          docker-compose --env-file website.env -f website.docker-compose.yml -p "olympics-frontend" up --build -d
+          docker-compose -f website.docker-compose.yml -p "olympics-frontend" up --build -d
           docker image prune -f
