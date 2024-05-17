@@ -27,3 +27,5 @@ dist-ssr
 docker
 test_dump
 personal*
+*.env
+.env*

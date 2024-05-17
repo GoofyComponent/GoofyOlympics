@@ -16,6 +16,10 @@ export function MockServer({ environment = 'development' }) {
       });
       this.passthrough('https://cors-anywhere.stroyco.eu/**');
       this.passthrough('https://api-olympics.stroyco.eu/**');
+      this.passthrough('https://api.mapbox.com/**');
+      this.passthrough('https://events.mapbox.com/**');
+      this.passthrough('https://api.maptiler.com/**');
+      this.passthrough('https://data.paris2024.org/**');
     },
   });
 }
