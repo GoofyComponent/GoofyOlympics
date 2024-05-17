@@ -15,4 +15,4 @@ jobs:
       - name: Install dependencies
         run: cd front && npm install
       - name: Lint code
-        run: cd front && npm run lint
+        run: cd front && npm run lint && npm run build

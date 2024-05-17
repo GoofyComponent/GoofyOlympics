@@ -11,28 +11,86 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AppImport } from './routes/app'
+import { Route as LoginImport } from './routes/login'
+import { Route as MainappImport } from './routes/_mainapp'
+import { Route as MainappIndexImport } from './routes/_mainapp/index'
+import { Route as MainappCountriesImport } from './routes/_mainapp/countries'
+import { Route as MainappAthletesImport } from './routes/_mainapp/athletes'
+import { Route as MainappAppImport } from './routes/_mainapp/app'
 
 // Create/Update Routes
 
-const AppRoute = AppImport.update({
-  path: '/app',
+const LoginRoute = LoginImport.update({
+  path: '/login',
   getParentRoute: () => rootRoute,
+} as any)
+
+const MainappRoute = MainappImport.update({
+  id: '/_mainapp',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MainappIndexRoute = MainappIndexImport.update({
+  path: '/',
+  getParentRoute: () => MainappRoute,
+} as any)
+
+const MainappCountriesRoute = MainappCountriesImport.update({
+  path: '/countries',
+  getParentRoute: () => MainappRoute,
+} as any)
+
+const MainappAthletesRoute = MainappAthletesImport.update({
+  path: '/athletes',
+  getParentRoute: () => MainappRoute,
+} as any)
+
+const MainappAppRoute = MainappAppImport.update({
+  path: '/app',
+  getParentRoute: () => MainappRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/app': {
-      preLoaderRoute: typeof AppImport
+    '/_mainapp': {
+      preLoaderRoute: typeof MainappImport
       parentRoute: typeof rootRoute
+    }
+    '/login': {
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/_mainapp/app': {
+      preLoaderRoute: typeof MainappAppImport
+      parentRoute: typeof MainappImport
+    }
+    '/_mainapp/athletes': {
+      preLoaderRoute: typeof MainappAthletesImport
+      parentRoute: typeof MainappImport
+    }
+    '/_mainapp/countries': {
+      preLoaderRoute: typeof MainappCountriesImport
+      parentRoute: typeof MainappImport
+    }
+    '/_mainapp/': {
+      preLoaderRoute: typeof MainappIndexImport
+      parentRoute: typeof MainappImport
     }
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([AppRoute])
+export const routeTree = rootRoute.addChildren([
+  MainappRoute.addChildren([
+    MainappAppRoute,
+    MainappAthletesRoute,
+    MainappCountriesRoute,
+    MainappIndexRoute,
+  ]),
+  LoginRoute,
+])
 
 /* prettier-ignore-end */
