@@ -11,28 +11,61 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AppImport } from './routes/app'
+import { Route as LoginImport } from './routes/login'
+import { Route as MainappImport } from './routes/_mainapp'
+import { Route as MainappIndexImport } from './routes/_mainapp/index'
+import { Route as MainappAppImport } from './routes/_mainapp/app'
 
 // Create/Update Routes
 
-const AppRoute = AppImport.update({
-  path: '/app',
+const LoginRoute = LoginImport.update({
+  path: '/login',
   getParentRoute: () => rootRoute,
+} as any)
+
+const MainappRoute = MainappImport.update({
+  id: '/_mainapp',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MainappIndexRoute = MainappIndexImport.update({
+  path: '/',
+  getParentRoute: () => MainappRoute,
+} as any)
+
+const MainappAppRoute = MainappAppImport.update({
+  path: '/app',
+  getParentRoute: () => MainappRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/app': {
-      preLoaderRoute: typeof AppImport
+    '/_mainapp': {
+      preLoaderRoute: typeof MainappImport
       parentRoute: typeof rootRoute
+    }
+    '/login': {
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/_mainapp/app': {
+      preLoaderRoute: typeof MainappAppImport
+      parentRoute: typeof MainappImport
+    }
+    '/_mainapp/': {
+      preLoaderRoute: typeof MainappIndexImport
+      parentRoute: typeof MainappImport
     }
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([AppRoute])
+export const routeTree = rootRoute.addChildren([
+  MainappRoute.addChildren([MainappAppRoute, MainappIndexRoute]),
+  LoginRoute,
+])
 
 /* prettier-ignore-end */
