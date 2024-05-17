@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       - API_URL=${API_URL:-https://api-olympics.stroyco.eu/}
+      - VITE_MAPTILER_PUBLIC=${VITE_MAPTILER_PUBLIC}
     networks:
       - hosted
 
