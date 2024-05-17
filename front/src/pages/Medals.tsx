@@ -1,5 +1,6 @@
-import { ChevronsLeft, ChevronsRight, ChevronsUpDown, Medal } from 'lucide-react';
-import { useState } from 'react';
+import { useLoaderData } from '@tanstack/react-router';
+import { ChevronsLeft, ChevronsRight, ChevronsUpDown, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import {
@@ -25,11 +26,20 @@ interface Medal {
   count: string;
 }
 
-interface MedalsProps {
-  medalsResp: { [nocCode: string]: Medal[] };
-}
+export default function MedalsPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const medals = useLoaderData({ from: '/_mainapp/countries' });
+  const medalsResp: {
+    [nocCodes: string]: Medal[];
+  } = medals.medals.medals;
+  console.log(medalsResp);
 
-export default function Medals({ medalsResp }: MedalsProps) {
+  useEffect(() => {
+    if (medalsResp) {
+      setIsLoading(false);
+    }
+  }, [medalsResp]);
+
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: string }>({
     key: 'country',
     direction: 'ascending',
@@ -81,149 +91,157 @@ export default function Medals({ medalsResp }: MedalsProps) {
 
   return (
     <>
-      <div className="container py-8  ">
-        <div className="flex justify-between py-4 flex-col md:flex-row">
-          <h1 className=" text-2xl md:text-3xl lg:text-4xl font-bold">
-            Medailles par pays
-          </h1>
-          <div className=" flex">
-            <Input
-              className="w-11/12  md:ml-auto mt-4"
-              placeholder="Rechercher un pays"
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
-          </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-screen ">
+          <LoaderCircle strokeWidth={1.25} size={64} className="animate-spin" />
         </div>
-        <Table>
-          <TableCaption>Liste des medailles par pays</TableCaption>
-          <TableHeader>
-            <TableRow className="select-none">
-              <TableHead
-                className="w-[300px] cursor-pointer nose select-none"
-                onClick={() => handleSort('country')}
-              >
-                <span className="flex items-center ">
-                  Pays
-                  <ChevronsUpDown size={16} className="ml-2" />
-                </span>
-              </TableHead>
-              <TableHead className="w-[100px] text-2xl text-center">🥇</TableHead>
-              <TableHead className="w-[100px] text-2xl text-center">🥈</TableHead>
-              <TableHead className="w-[100px] text-2xl text-center">🥉</TableHead>
-              <TableHead
-                className="text-right cursor-pointer select-none"
-                onClick={() => handleSort('total')}
-              >
-                <span className="flex items-center justify-end ">
-                  Totale
-                  <ChevronsUpDown size={16} className="ml-2" />
-                </span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedNocCodes.map((nocCode, i) => {
-              const medalCounts = medalsResp[nocCode].reduce(
-                (acc, medal) => {
-                  acc[medal.medal] = Number(medal.count);
-                  acc.total += acc[medal.medal];
-                  return acc;
-                },
-                { total: 0, Gold: 0, Silver: 0, Bronze: 0 } as { [key: string]: number },
-              );
+      ) : (
+        <div className="container py-8  ">
+          <div className="flex justify-between py-4 flex-col md:flex-row">
+            <h1 className=" text-2xl md:text-3xl lg:text-4xl font-bold">
+              Medailles par pays
+            </h1>
+            <div className=" flex">
+              <Input
+                className="w-11/12  md:ml-auto mt-4"
+                placeholder="Rechercher un pays"
+                value={searchTerm}
+                onChange={handleSearchChange}
+              />
+            </div>
+          </div>
+          <Table>
+            <TableCaption>Liste des medailles par pays</TableCaption>
+            <TableHeader>
+              <TableRow className="select-none">
+                <TableHead
+                  className="w-[300px] cursor-pointer nose select-none"
+                  onClick={() => handleSort('country')}
+                >
+                  <span className="flex items-center ">
+                    Pays
+                    <ChevronsUpDown size={16} className="ml-2" />
+                  </span>
+                </TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">🥇</TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">🥈</TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">🥉</TableHead>
+                <TableHead
+                  className="text-right cursor-pointer select-none"
+                  onClick={() => handleSort('total')}
+                >
+                  <span className="flex items-center justify-end ">
+                    Totale
+                    <ChevronsUpDown size={16} className="ml-2" />
+                  </span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedNocCodes.map((nocCode, i) => {
+                const medalCounts = medalsResp[nocCode].reduce(
+                  (acc, medal) => {
+                    acc[medal.medal] = Number(medal.count);
+                    acc.total += acc[medal.medal];
+                    return acc;
+                  },
+                  { total: 0, Gold: 0, Silver: 0, Bronze: 0 } as {
+                    [key: string]: number;
+                  },
+                );
 
-              return (
-                <TableRow key={i}>
-                  <TableCell>{nocCode}</TableCell>
-                  <TableCell className="text-center">
-                    {medalCounts['Gold'] || 0}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {medalCounts['Silver'] || 0}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {medalCounts['Bronze'] || 0}
-                  </TableCell>
-                  <TableCell className="text-center sm:text-right">
-                    {medalCounts.total}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationLink onClick={() => handlePageChange(1)}>
-                <ChevronsLeft className="h-4 w-4" />
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationPrevious
-              onClick={() =>
-                handlePageChange(currentPage > 1 ? currentPage - 1 : currentPage)
-              }
-            />
-            {currentPage === 1
-              ? [...Array(3)].map((_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => handlePageChange(i + 1)}
-                      className={currentPage === i + 1 ? 'bg-gray-200' : ''}
-                    >
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))
-              : currentPage === Math.ceil(nocCodes.length / itemsPerPage)
-                ? [...Array(3)].map((_, i) => {
-                    const page = Math.ceil(nocCodes.length / itemsPerPage) - 2 + i;
-                    return (
-                      <PaginationItem key={i}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          className={currentPage === page ? 'bg-gray-200' : ''}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })
-                : [...Array(3)].map((_, i) => {
-                    const page = currentPage - 1 + i;
-                    return (
-                      <PaginationItem key={i}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          className={currentPage === page ? 'bg-gray-200' : ''}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-            <PaginationNext
-              onClick={() =>
-                handlePageChange(
-                  currentPage < Math.ceil(nocCodes.length / itemsPerPage)
-                    ? currentPage + 1
-                    : currentPage,
-                )
-              }
-            />
-            <PaginationItem>
-              <PaginationLink
+                return (
+                  <TableRow key={i}>
+                    <TableCell>{nocCode}</TableCell>
+                    <TableCell className="text-center">
+                      {medalCounts['Gold'] || 0}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {medalCounts['Silver'] || 0}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {medalCounts['Bronze'] || 0}
+                    </TableCell>
+                    <TableCell className="text-center sm:text-right">
+                      {medalCounts.total}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationLink onClick={() => handlePageChange(1)}>
+                  <ChevronsLeft className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationPrevious
                 onClick={() =>
-                  handlePageChange(Math.ceil(nocCodes.length / itemsPerPage))
+                  handlePageChange(currentPage > 1 ? currentPage - 1 : currentPage)
                 }
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </PaginationLink>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+              />
+              {currentPage === 1
+                ? [...Array(3)].map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(i + 1)}
+                        className={currentPage === i + 1 ? 'bg-gray-200' : ''}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))
+                : currentPage === Math.ceil(nocCodes.length / itemsPerPage)
+                  ? [...Array(3)].map((_, i) => {
+                      const page = Math.ceil(nocCodes.length / itemsPerPage) - 2 + i;
+                      return (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            className={currentPage === page ? 'bg-gray-200' : ''}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })
+                  : [...Array(3)].map((_, i) => {
+                      const page = currentPage - 1 + i;
+                      return (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            className={currentPage === page ? 'bg-gray-200' : ''}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+              <PaginationNext
+                onClick={() =>
+                  handlePageChange(
+                    currentPage < Math.ceil(nocCodes.length / itemsPerPage)
+                      ? currentPage + 1
+                      : currentPage,
+                  )
+                }
+              />
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() =>
+                    handlePageChange(Math.ceil(nocCodes.length / itemsPerPage))
+                  }
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </>
   );
 }
