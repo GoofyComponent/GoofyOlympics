@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as MedalsImport } from './routes/medals'
 import { Route as LoginImport } from './routes/login'
 import { Route as MainappImport } from './routes/_mainapp'
 import { Route as MainappIndexImport } from './routes/_mainapp/index'
@@ -19,6 +20,11 @@ import { Route as MainappAthletesImport } from './routes/_mainapp/athletes'
 import { Route as MainappAppImport } from './routes/_mainapp/app'
 
 // Create/Update Routes
+
+const MedalsRoute = MedalsImport.update({
+  path: '/medals',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const LoginRoute = LoginImport.update({
   path: '/login',
@@ -62,6 +68,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/medals': {
+      preLoaderRoute: typeof MedalsImport
+      parentRoute: typeof rootRoute
+    }
     '/_mainapp/app': {
       preLoaderRoute: typeof MainappAppImport
       parentRoute: typeof MainappImport
@@ -91,6 +101,7 @@ export const routeTree = rootRoute.addChildren([
     MainappIndexRoute,
   ]),
   LoginRoute,
+  MedalsRoute,
 ])
 
 /* prettier-ignore-end */

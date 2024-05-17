@@ -11,6 +11,11 @@ export function MockServer({ environment = 'development' }) {
       this.get('/test', () => {
         return { data: 'test' };
       });
+      this.get('/login', () => {
+        return { data: 'test' };
+      });
+      this.passthrough('https://cors-anywhere.stroyco.eu/**');
+      this.passthrough('https://api-olympics.stroyco.eu/**');
     },
   });
 }
