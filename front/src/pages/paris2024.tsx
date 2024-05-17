@@ -7,7 +7,7 @@ import { MapPin, MapPinned } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { MapRef, Marker } from 'react-map-gl/maplibre';
 
-import { MainTitle, SubTitle } from '@/components/title';
+import { MainTitle /* , SubTitle */ } from '@/components/title';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,7 +16,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent /* , TabsList, TabsTrigger */ } from '@/components/ui/tabs';
 
 type Location = {
   adress: string | null;
@@ -82,12 +82,12 @@ export const Paris2024Page = () => {
       <p className="font-light text-xl">26 July - 11 August, 2024</p>
       <div className="mt-4">
         <Tabs defaultValue="map">
-          <TabsList>
+          {/* <TabsList>
             <TabsTrigger value="map">Interactive map</TabsTrigger>
             <TabsTrigger value="calendar">Events calendar</TabsTrigger>
-          </TabsList>
+          </TabsList> */}
           <TabsContent value="map" className="w-full ">
-            <SubTitle className="py-2">Competition sites</SubTitle>
+            {/* <SubTitle className="py-2">Competition sites</SubTitle> */}
             <div className="flex py-2">
               <p className="font-light mr-2">Filters :</p>
               <div className="flex flex-wrap gap-2">
