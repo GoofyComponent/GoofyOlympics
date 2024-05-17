@@ -1,0 +1,17 @@
+name: "Issue Links"
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+jobs:
+  issue-links:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: tkt-actions/add-issue-links@v1.8.1
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          branch-prefix: "OLYMPICS-"
+          link-style: "body"
+          resolve: true
