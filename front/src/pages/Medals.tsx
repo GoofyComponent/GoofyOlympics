@@ -1,4 +1,4 @@
-import { useLoaderData } from '@tanstack/react-router';
+import { Link, useLoaderData } from '@tanstack/react-router';
 import { ChevronsLeft, ChevronsRight, ChevronsUpDown, LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -152,7 +152,11 @@ export default function MedalsPage() {
 
                 return (
                   <TableRow key={i}>
-                    <TableCell>{nocCode}</TableCell>
+                    <TableCell>
+                      <Link to="/countrie/$id" params={{ id: nocCode }}>
+                        {nocCode}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-center">
                       {medalCounts['Gold'] || 0}
                     </TableCell>

@@ -18,6 +18,7 @@ import { Route as MainappCountriesImport } from './routes/_mainapp/countries'
 import { Route as MainappAthletesImport } from './routes/_mainapp/athletes'
 import { Route as MainappAppImport } from './routes/_mainapp/app'
 import { Route as Mainapp2024Import } from './routes/_mainapp/2024'
+import { Route as MainappCountrieIdImport } from './routes/_mainapp/countrie/$id'
 
 // Create/Update Routes
 
@@ -56,6 +57,11 @@ const Mainapp2024Route = Mainapp2024Import.update({
   getParentRoute: () => MainappRoute,
 } as any)
 
+const MainappCountrieIdRoute = MainappCountrieIdImport.update({
+  path: '/countrie/$id',
+  getParentRoute: () => MainappRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -88,6 +94,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainappIndexImport
       parentRoute: typeof MainappImport
     }
+    '/_mainapp/countrie/$id': {
+      preLoaderRoute: typeof MainappCountrieIdImport
+      parentRoute: typeof MainappImport
+    }
   }
 }
 
@@ -100,6 +110,7 @@ export const routeTree = rootRoute.addChildren([
     MainappAthletesRoute,
     MainappCountriesRoute,
     MainappIndexRoute,
+    MainappCountrieIdRoute,
   ]),
   LoginRoute,
 ])
