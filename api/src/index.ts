@@ -318,6 +318,10 @@ app.get(
         }
       }
 
+      if (data.noc) {
+        data.noc = data.noc.toUpperCase();
+      }
+
       let query = "SELECT * FROM athlete_events";
       let conditions: string[] = [];
       let values: string[] = [];
@@ -496,7 +500,7 @@ app.get(
 
       if (data.noc) {
         query += " HAVING noc = $1";
-        values.push(data.noc);
+        values.push(data.noc.toUpperCase());
       }
 
       try {
