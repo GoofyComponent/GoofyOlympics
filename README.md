@@ -29,6 +29,7 @@ La liste des types disponibles est :
 - `refactor`: une modification du code qui ne corrige pas de bogue et n'ajoute pas de fonctionnalité
 - `style`: Changements qui n'affectent pas la signification du code (espaces blancs, formatage, points-virgules manquants, etc.)
 - `test`: Ajout de tests manquants ou correction de tests existants
+- `wip`: Travail en cours
 - `chore`
 - `revert`
 
