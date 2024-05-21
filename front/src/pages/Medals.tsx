@@ -20,6 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Medal {
   medal: string;
@@ -32,7 +38,6 @@ export default function MedalsPage() {
   const medalsResp: {
     [nocCodes: string]: Medal[];
   } = medals.medals.medals;
-  console.log(medalsResp);
 
   useEffect(() => {
     if (medalsResp) {
@@ -98,9 +103,12 @@ export default function MedalsPage() {
       ) : (
         <div className="container py-8  ">
           <div className="flex justify-between py-4 flex-col md:flex-row">
-            <h1 className=" text-2xl md:text-3xl lg:text-4xl font-bold">
-              Medailles par pays
-            </h1>
+            <div className="w-7/12 p-8 relative ">
+              <div className="text-6xl font-bold text-zinc-200 absolute text-nowrap top-0 left-0">
+                Medailles par pay
+              </div>
+              <h1 className="text-4xl font-bold relative">Medailles par pay</h1>
+            </div>
             <div className=" flex">
               <Input
                 className="w-11/12  md:ml-auto mt-4"
@@ -123,9 +131,36 @@ export default function MedalsPage() {
                     <ChevronsUpDown size={16} className="ml-2" />
                   </span>
                 </TableHead>
-                <TableHead className="w-[100px] text-2xl text-center">🥇</TableHead>
-                <TableHead className="w-[100px] text-2xl text-center">🥈</TableHead>
-                <TableHead className="w-[100px] text-2xl text-center">🥉</TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>🥇</TooltipTrigger>
+                      <TooltipContent>
+                        <p>Golden medals</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>🥈</TooltipTrigger>
+                      <TooltipContent>
+                        <p>Silver medals</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
+                <TableHead className="w-[100px] text-2xl text-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>🥉</TooltipTrigger>
+                      <TooltipContent>
+                        <p>Bronze medals</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
                 <TableHead
                   className="text-right cursor-pointer select-none"
                   onClick={() => handleSort('total')}
