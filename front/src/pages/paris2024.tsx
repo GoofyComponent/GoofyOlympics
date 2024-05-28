@@ -338,7 +338,7 @@ const LocationCard = ({
             target="_blank"
             className="flex items-center justify-end"
           >
-            <p className="mr-2">View on Google Maps</p>
+            <p className="mr-2 hidden md:block">View on Google Maps</p>
             <MapPinned />
           </a>
         </Button>
