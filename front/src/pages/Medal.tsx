@@ -1,16 +1,73 @@
 import { useLoaderData } from '@tanstack/react-router';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getCountryData } from '@/lib/countrieName';
 
 export default function MedalPage() {
+  const COLORS = ['#F4CB72', '#E5E5E5', '#D6B48C'];
+  const data = [
+    {
+      name: '2000',
+      or: 50,
+      argent: 150,
+      bronze: 140,
+    },
+    {
+      name: '2004',
+      or: 400,
+      argent: 200,
+      bronze: 220,
+    },
+    {
+      name: '2008',
+      or: 450,
+      argent: 250,
+      bronze: 230,
+    },
+    {
+      name: '2012',
+      or: 500,
+      argent: 300,
+      bronze: 240,
+    },
+    {
+      name: '2016',
+      or: 550,
+      argent: 350,
+      bronze: 250,
+    },
+    {
+      name: '2020',
+      or: 600,
+      argent: 400,
+      bronze: 260,
+    },
+
+    // Add valid objects here
+  ];
+
+  const [filteredData, setFilteredData] = useState(data);
+  const [selectedYear, setSelectedYear] = useState('2020');
+
   const [isLoading, setIsLoading] = useState(true);
   const countrie = useLoaderData({ from: '/_mainapp/countrie/$id' });
   console.log(countrie);
@@ -47,6 +104,18 @@ export default function MedalPage() {
       setIsLoading(false);
     }
   }, [resp]);
+
+  useEffect(() => {
+    const newData = data.filter((item) => item.name === selectedYear);
+    setFilteredData(newData);
+  }, [selectedYear]);
+
+  const medalData = [
+    { name: 'Gold', value: filteredData[0]?.or },
+    { name: 'Silver', value: filteredData[0]?.argent },
+    { name: 'Bronze', value: filteredData[0]?.bronze },
+  ];
+
   return (
     <>
       {isLoading ? (
@@ -55,6 +124,14 @@ export default function MedalPage() {
         </div>
       ) : (
         <div className="container py-8  ">
+          <div className="my-2">
+            <Undo2
+              className="cursor-pointer w-8 h-8 text-zinc-700 hover:text-zinc-900"
+              onClick={() => {
+                window.history.back();
+              }}
+            />
+          </div>
           <div className="flex w-full my-4 mx-8">
             <div className="w-7/12 p-8 relative ">
               <div className="text-6xl font-bold text-zinc-200 absolute text-nowrap top-0 left-0">
@@ -74,7 +151,9 @@ export default function MedalPage() {
             <div className="flex flex-col p-4">
               <div className="w-full flex">
                 <div className="w-1/4 px-2">
-                  <p className="text-xl text-zinc-400">Nombre de participation</p>
+                  <p className="text-xl text-zinc-400">
+                    Nombre <br /> de participation
+                  </p>
                 </div>
                 <div className="w-1/4 px-2">
                   <p className="text-xl text-zinc-400">
@@ -83,27 +162,19 @@ export default function MedalPage() {
                 </div>
                 <div className="w-1/4 px-2">
                   <p className="text-xl text-zinc-400">
-                    Meilleur <br /> Athlete
-                  </p>
-                </div>
-                <div className="w-1/4 px-2">
-                  <p className="text-xl text-zinc-400">
-                    Meilleur <br /> Discipline
+                    Nombre <br /> de participations
                   </p>
                 </div>
               </div>
               <div className="w-full flex">
                 <div className="w-1/4 px-2">
-                  <p className="text-lg p-2">{resp[noc].length}</p>
+                  <p className="text-lg">{resp[noc].length}</p>
                 </div>
                 <div className="w-1/4 px-2">
-                  <p className="text-lg p-2">2012</p>
+                  <p className="text-lg">2012</p>
                 </div>
                 <div className="w-1/4 px-2">
-                  <p className="text-lg p-2">Antoine Azevedo da silva</p>
-                </div>
-                <div className="w-1/4 px-2">
-                  <p className="text-lg p-2">Judo</p>
+                  <p className="text-lg">16</p>
                 </div>
               </div>
             </div>
@@ -111,52 +182,16 @@ export default function MedalPage() {
             <div className="flex flex-col  p-4">
               <div className="w-full flex">
                 <div className="w-1/4 text-center flex flex-col">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="text-2xl text-zinc-400 ">
-                        Gold 🥇
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Golden medals</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <p className="text-2xl text-zinc-400 ">Gold 🥇</p>
                 </div>
                 <div className="w-1/4 text-center flex flex-col">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="text-2xl text-zinc-400">
-                        Silver 🥈
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Silver medals</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <p className="text-2xl text-zinc-400">Silver 🥈</p>
                 </div>
                 <div className="w-1/4 text-center flex flex-col">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="text-2xl text-zinc-400">
-                        Bronze 🥉
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Bronze medals</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <p className="text-2xl text-zinc-400">Bronze 🥉</p>
                 </div>
                 <div className="w-1/4 text-center flex flex-col">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="text-2xl text-zinc-400">
-                        Total
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Total of medals</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <p className="text-2xl text-zinc-400">Total</p>
                 </div>
               </div>
               <div className="w-full flex">
@@ -172,6 +207,77 @@ export default function MedalPage() {
                 <div className="w-1/4 text-center flex flex-col">
                   <p className="text-4xl font-bold">{totalMedals}</p>
                 </div>
+              </div>
+            </div>
+            <div className="flex flex-col lg:flex-row">
+              <div className="w-full lg:w-1/2 my-20">
+                <div className=" p-8 relative ">
+                  <h2 className="text-4xl font-bold relative">
+                    Medals per participation
+                  </h2>
+                </div>
+                <BarChart width={600} height={300} data={data}>
+                  <Tooltip />
+                  <Legend />
+                  <Bar
+                    type="monotone"
+                    barSize="30"
+                    stackId="a"
+                    dataKey="or"
+                    fill="#F4CB72"
+                  />
+                  <Bar
+                    type="monotone"
+                    barSize="30"
+                    stackId="a"
+                    dataKey="argent"
+                    fill="#E5E5E5"
+                  />
+                  <Bar
+                    type="monotone"
+                    barSize="30"
+                    stackId="a"
+                    dataKey="bronze"
+                    fill="#D6B48C"
+                  />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                </BarChart>
+              </div>
+              <div className="w-full lg:w-1/2 my-20">
+                <div className=" p-8 pb-0 relative flex ">
+                  <h2 className="text-4xl mr-6 font-bold relative">Medals per year</h2>
+                  <Select onValueChange={(value) => setSelectedYear(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={selectedYear} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {data.map((item) => (
+                        <SelectItem key={item.name} value={item.name}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <PieChart width={400} height={400}>
+                  <Pie
+                    dataKey="value"
+                    isAnimationActive={false}
+                    data={medalData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    label
+                  >
+                    {medalData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
               </div>
             </div>
           </div>

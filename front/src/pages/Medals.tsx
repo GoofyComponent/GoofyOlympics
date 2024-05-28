@@ -1,4 +1,4 @@
-import { Link, useLoaderData } from '@tanstack/react-router';
+import { Link, useLoaderData, useNavigate } from '@tanstack/react-router';
 import { ChevronsLeft, ChevronsRight, ChevronsUpDown, LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -33,6 +33,7 @@ interface Medal {
 }
 
 export default function MedalsPage() {
+  const navigate = useNavigate({ from: '/_mainapp/countries' });
   const [isLoading, setIsLoading] = useState(true);
   const medals = useLoaderData({ from: '/_mainapp/countries' });
   const medalsResp: {
@@ -186,7 +187,13 @@ export default function MedalsPage() {
                 );
 
                 return (
-                  <TableRow key={i}>
+                  <TableRow
+                    key={i}
+                    onClick={() =>
+                      navigate({ to: '/countrie/$id', params: { id: nocCode } })
+                    }
+                    className="cursor-pointer"
+                  >
                     <TableCell>
                       <Link to="/countrie/$id" params={{ id: nocCode }}>
                         {nocCode}
