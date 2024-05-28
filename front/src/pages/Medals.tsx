@@ -32,7 +32,6 @@ export default function MedalsPage() {
   const medalsResp: {
     [nocCodes: string]: Medal[];
   } = medals.medals.medals;
-  console.log(medalsResp);
 
   useEffect(() => {
     if (medalsResp) {

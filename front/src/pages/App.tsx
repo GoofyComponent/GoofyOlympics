@@ -5,19 +5,13 @@ import { useEffect } from 'react';
 
 function App() {
   useEffect(() => {
-    const aaa = 'aaaaaa';
-
-    console.log('MODE', import.meta.env.MODE);
-
-    console.log('uuuuuu', aaa);
-
     testMock();
   }, []);
 
   const testMock = async () => {
     const reponse = await fetch('/api/test');
     const data = await reponse.json();
-    console.log('data', data);
+    console.log(data);
   };
 
   return (
