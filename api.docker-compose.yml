@@ -16,6 +16,22 @@ services:
     networks:
       - join
       - hosted
+  calendar_scraper:
+    container_name: calendar_scraper_goofy_olympics
+    build:
+      context: ./database/calendar_scraper
+      dockerfile: scraper.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - postgres_goofy_olympics
+    environment:
+      - DB_USER=${DB_USER:-postgres}
+      - DB_HOST=${DB_HOST:-localhost}
+      - DB_DATABASE=${DB_DATABASE:-goofy_olympics}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_PORT=${DB_PORT:-5438}
+    networks:
+      - join
   postgres_goofy_olympics:
     container_name: postgres_goofy_olympics
     image: postgres:13.4-bullseye
@@ -42,6 +58,7 @@ services:
       - postgres_goofy_olympics
     networks:
       - join
+      - hosted
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-user@mail.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
