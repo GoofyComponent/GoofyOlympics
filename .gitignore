@@ -29,3 +29,4 @@ test_dump
 personal*
 *.env
 .env*
+data.json
