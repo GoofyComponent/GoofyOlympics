@@ -13,6 +13,8 @@ import {
   YAxis,
 } from 'recharts';
 
+import { columns } from '@/components/columns';
+import { DataTable } from '@/components/data-table';
 import {
   Select,
   SelectContent,
@@ -23,7 +25,7 @@ import {
 import { getCountryData } from '@/lib/countrieName';
 
 export default function MedalPage() {
-  const COLORS = ['#F4CB72', '#E5E5E5', '#D6B48C'];
+  const COLORS = ['#F4CB72', '#BEBEBE', '#D6B48C'];
   const data = [
     {
       name: '2000',
@@ -55,25 +57,28 @@ export default function MedalPage() {
       argent: 350,
       bronze: 250,
     },
-    {
-      name: '2020',
-      or: 600,
-      argent: 400,
-      bronze: 260,
-    },
-
-    // Add valid objects here
   ];
 
   const [filteredData, setFilteredData] = useState(data);
-  const [selectedYear, setSelectedYear] = useState('2020');
+  const [selectedYear, setSelectedYear] = useState('2016');
 
   const [isLoading, setIsLoading] = useState(true);
+  const [Athletes, setAthletes] = useState([]);
   const countrie = useLoaderData({ from: '/_mainapp/countrie/$id' });
-  console.log(countrie);
   const resp = countrie.medals.medals;
   const noc = Object.keys(resp)[0];
   const countryName = getCountryData(noc);
+
+  useEffect(() => {
+    fetch(
+      `https://api-olympics.stroyco.eu/api/athletes?page=1&limit=15&noc=${noc}&year=${selectedYear}&optionSort=equal`,
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        setAthletes(data.athletes);
+        console.log('athlete', data);
+      });
+  }, [noc, selectedYear]);
 
   let goldCount = 0;
   let silverCount = 0;
@@ -216,33 +221,35 @@ export default function MedalPage() {
                     Medals per participation
                   </h2>
                 </div>
-                <BarChart width={600} height={300} data={data}>
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    type="monotone"
-                    barSize="30"
-                    stackId="a"
-                    dataKey="or"
-                    fill="#F4CB72"
-                  />
-                  <Bar
-                    type="monotone"
-                    barSize="30"
-                    stackId="a"
-                    dataKey="argent"
-                    fill="#E5E5E5"
-                  />
-                  <Bar
-                    type="monotone"
-                    barSize="30"
-                    stackId="a"
-                    dataKey="bronze"
-                    fill="#D6B48C"
-                  />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                </BarChart>
+                <div className="flex h-full items-center">
+                  <BarChart width={600} height={300} data={data}>
+                    <Tooltip />
+                    <Legend />
+                    <Bar
+                      type="monotone"
+                      barSize="30"
+                      stackId="a"
+                      dataKey="or"
+                      fill="#F4CB72"
+                    />
+                    <Bar
+                      type="monotone"
+                      barSize="30"
+                      stackId="a"
+                      dataKey="argent"
+                      fill="#BEBEBE"
+                    />
+                    <Bar
+                      type="monotone"
+                      barSize="30"
+                      stackId="a"
+                      dataKey="bronze"
+                      fill="#D6B48C"
+                    />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                  </BarChart>
+                </div>
               </div>
               <div className="w-full lg:w-1/2 my-20">
                 <div className=" p-8 pb-0 relative flex ">
@@ -260,25 +267,33 @@ export default function MedalPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <PieChart width={400} height={400}>
-                  <Pie
-                    dataKey="value"
-                    isAnimationActive={false}
-                    data={medalData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    label
-                  >
-                    {medalData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
+                <div className="flex h-full items-center justify-center">
+                  <PieChart width={400} height={400}>
+                    <Pie
+                      dataKey="value"
+                      isAnimationActive={false}
+                      data={medalData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      label
+                    >
+                      {medalData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </div>
               </div>
+            </div>
+            <div className="w-full my-20">
+              <DataTable columns={columns} data={Athletes} />
             </div>
           </div>
         </div>
