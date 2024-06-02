@@ -20,6 +20,7 @@ if (process.env.NODE_ENV === "production") {
     database: process.env.DB_DATABASE,
     password: process.env.DB_PASSWORD,
     port: parseInt(process.env.DB_PORT || "5432"),
+    timezone: "UTC",
   };
 } else {
   dbConfig = {
@@ -28,10 +29,17 @@ if (process.env.NODE_ENV === "production") {
     host: "localhost",
     port: 5438,
     database: "goofy_olympics",
+    timezone: "UTC",
   };
 }
 
 const { Client } = pg;
+pg.types.setTypeParser(pg.types.builtins.DATE, (value) => {
+  return value;
+});
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (value) => {
+  return value;
+});
 const client = new Client(dbConfig);
 await client.connect();
 
@@ -525,6 +533,167 @@ app.get(
 
       return res.send({
         medals: pays,
+      });
+    }
+    return res.send({ errors: result.array() });
+  }
+);
+
+/**
+ * @swagger
+ * /api/events:
+ *   get:
+ *     summary: Récupère une liste des événements
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: La page à récupérer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *         description: Le nombre de régions à récupérer par page
+ *       - in: query
+ *         name: sports
+ *         schema:
+ *           type: string
+ *         description: Filtrer par nom de sport
+ *       - in: query
+ *         name: code_sport
+ *         schema:
+ *           type: string
+ *         description: Filtrer par code de sport
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: Filtrer par lieu
+ *       - in: query
+ *         name: code_site
+ *         schema:
+ *           type: string
+ *         description: Filtrer par code de lieu
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *         description: Filtrer par jour unique
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *         description: Filtrer par date de début
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *         description: Filtrer par date de fin
+ *       - in: query
+ *         name: medal
+ *         schema:
+ *           type: enum
+ *           enum: [true, false, all]
+ *           default: all
+ *         description: Filtrer par épreuve qualificative pour une médaille
+ *     responses:
+ *       200:
+ *         description: Une liste de médailles
+ *       500:
+ *         description: Erreur interne du serveur
+ */
+app.get(
+  "/api/events",
+  query("page").default(1).isInt({ min: 1 }).escape(),
+  query("limit").default(LIMIT).isInt().escape(),
+  query([
+    /* "sports", */
+    "code_sport",
+    "location",
+    "code_site",
+    "date",
+    "from",
+    "to",
+  ])
+    .optional()
+    .escape(),
+  query("medal").default("all").isIn(["true", "false", "all"]).escape(),
+  async (req: Request, res: Response) => {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const data = matchedData(req);
+      const page = data.page;
+      const offset = (page - 1) * LIMIT;
+      const limit = data.limit;
+
+      let conditions: string[] = [];
+      let values: string | boolean[] = [];
+      let i = 1;
+      let events: any;
+
+      let query = "SELECT * FROM public.events";
+      for (const key in data) {
+        if (key === "page" || key === "limit") continue;
+
+        if (data[key]) {
+          if (key === "from") {
+            // With this we want to get all "time" (timestamp without time zone) that are greater than the "from" date
+            conditions.push(`full_date >= $${i}`);
+            values.push(data[key]);
+            i++;
+          } else if (key === "to") {
+            // With this we want to get all "time" (timestamp without time zone) that are less than the "to" date
+            conditions.push(`full_date <= $${i}`);
+            values.push(data[key]);
+            i++;
+          } else if (key === "medal") {
+            if (data[key] === "true") {
+              conditions.push(`medal = $${i}`);
+              values.push(true);
+              i++;
+            } else if (data[key] === "false") {
+              conditions.push(`medal = $${i}`);
+              values.push(false);
+              i++;
+            }
+          } else {
+            conditions.push(`${key} = $${i}`);
+            values.push(data[key]);
+            i++;
+          }
+        }
+      }
+
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      try {
+        events = await client.query(query, values);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      events.rows.sort((a: any, b: any) => {
+        if (a.date === b.date) {
+          return a.full_date - b.full_date;
+        }
+        return a.date - b.date;
+      });
+
+      return res.send({
+        events: events.rows,
+        currentPage: page,
+        currentLimit: limit,
       });
     }
     return res.send({ errors: result.array() });
