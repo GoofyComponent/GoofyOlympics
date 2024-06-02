@@ -1,34 +1,12 @@
-import pg from "pg";
-
 import { TeamEvent } from "./type";
 import { parse, setHours, setMinutes } from "date-fns";
 import { getLocation } from "./helpers/sites";
 import { getSport } from "./helpers/sports";
-
-let dbConfig: object;
-if (process.env.NODE_ENV === "production") {
-  dbConfig = {
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT || "5432"),
-  };
-} else {
-  dbConfig = {
-    user: "postgres",
-    password: "postgres",
-    host: "localhost",
-    port: 5438,
-    database: "goofy_olympics",
-  };
-}
-
-const { Client } = pg;
-const client = new Client(dbConfig);
+import { closeClient, createClient, openClient } from "./helpers/db";
 
 export const write = async (data: TeamEvent[]) => {
-  await openClient();
+  const client = createClient();
+  await openClient(client);
 
   try {
     const createTableQuery = `CREATE TABLE IF NOT EXISTS events (
@@ -43,22 +21,30 @@ export const write = async (data: TeamEvent[]) => {
       full_date TIMESTAMP,
       code_site VARCHAR(255),
       code_sport VARCHAR(255),
-      event_id_for_date VARCHAR(255)
+      event_id_for_date VARCHAR(255),
+      type_medal VARCHAR(255)
     )`;
 
     await client.query(createTableQuery);
 
     for (const row of data) {
-      const checkQuery = `SELECT * FROM events WHERE title = $1 AND time = $2 AND name = $3 AND location = $4 AND teams = $5 AND isForMedal = $6 AND date = $7 AND full_date = $8 AND code_site = $9 AND code_sport = $10 AND event_id_for_date = $11`;
+      const checkQuery = `SELECT * FROM events WHERE title = $1 AND time = $2 AND name = $3 AND location = $4 AND teams = $5 AND isForMedal = $6 AND date = $7 AND full_date = $8 AND code_site = $9 AND code_sport = $10 AND event_id_for_date = $11 AND type_medal = $12`;
 
       if (row.time === null) row.time = "00:00";
 
       const date = parse(row.date, "yyyy-MM-dd", new Date());
       const [hours, minutes] = row.time.split(":").map(Number);
       const dateWithTime = setMinutes(setHours(date, hours), minutes);
+      let medalType: string | null = null;
 
-      const newLoc = await getLocation(row.location || "");
+      const newLoc = getLocation(row.location || "");
       const newSport = getSport(row.title || "");
+
+      if (row.isForMedal && row.name) {
+        if (row.name.toLowerCase().includes("bronze")) medalType = "Bronze";
+        if (row.name.toLowerCase().includes("argent")) medalType = "Silver";
+        if (row.name.toLowerCase().includes("or")) medalType = "Gold";
+      }
 
       const checkValues = [
         row.title,
@@ -72,6 +58,7 @@ export const write = async (data: TeamEvent[]) => {
         newLoc,
         newSport,
         row.id,
+        medalType,
       ];
 
       const checkResult = await client.query(checkQuery, checkValues);
@@ -82,8 +69,8 @@ export const write = async (data: TeamEvent[]) => {
       }
 
       const insertQuery = `
-            INSERT INTO events (title, time, name, location, teams, isForMedal, date, full_date, code_site, code_sport, event_id_for_date)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            INSERT INTO events (title, time, name, location, teams, isForMedal, date, full_date, code_site, code_sport, event_id_for_date, type_medal)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           `;
 
       const values = [
@@ -98,27 +85,18 @@ export const write = async (data: TeamEvent[]) => {
         newLoc,
         newSport,
         row.id,
+        medalType,
       ];
 
       await client.query(insertQuery, values);
       console.log("Event inserted");
     }
   } catch (error) {
+    await closeClient(client);
     console.error(error);
     return false;
   } finally {
+    await closeClient(client);
     return true;
   }
-};
-
-export const openClient = async () => {
-  await client.connect();
-
-  console.log("Connected to database");
-};
-
-export const closeClient = async () => {
-  await client.end();
-
-  console.log("Connection closed");
 };
