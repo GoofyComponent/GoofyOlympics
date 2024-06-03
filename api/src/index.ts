@@ -543,87 +543,109 @@ app.get(
  * @swagger
  * /api/events:
  *   get:
- *     summary: Récupère une liste des événements
+ *     summary: Récupère une liste d'événements
+ *     description: Récupère une liste paginée d'événements en fonction des paramètres de requête fournis.
  *     parameters:
  *       - in: query
  *         name: page
- *         required: true
  *         schema:
  *           type: integer
  *           default: 1
  *           minimum: 1
- *         description: La page à récupérer
+ *         description: Le numéro de la page à récupérer.
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *           default: 10
- *           minimum: 1
- *         description: Le nombre de régions à récupérer par page
+ *           default: 200
+ *           maximum: 200
+ *         description: Le nombre d'événements à récupérer par page.
  *       - in: query
- *         name: sports
+ *         name: id
  *         schema:
  *           type: string
- *         description: Filtrer par nom de sport
+ *         description: L'identifiant de l'événement.
  *       - in: query
- *         name: code_sport
+ *         name: sport
  *         schema:
  *           type: string
- *         description: Filtrer par code de sport
+ *         description: Le sport de l'événement.
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Le type de l'événement.
+ *       - in: query
+ *         name: teams
+ *         schema:
+ *           type: string
+ *         description: Les équipes de l'événement.
  *       - in: query
  *         name: location
  *         schema:
  *           type: string
- *         description: Filtrer par lieu
+ *         description: L'emplacement de l'événement.
  *       - in: query
  *         name: code_site
  *         schema:
  *           type: string
- *         description: Filtrer par code de lieu
+ *         description: Le code du site de l'événement.
+ *       - in: query
+ *         name: code_sport
+ *         schema:
+ *           type: string
+ *         description: Le code du sport de l'événement.
+ *       - in: query
+ *         name: for_medal
+ *         schema:
+ *           type: string
+ *         description: Si l'événement est pour une médaille.
+ *       - in: query
+ *         name: medal_type
+ *         schema:
+ *           type: string
+ *         description: Le type de médaille de l'événement.
+ *       - in: query
+ *         name: time
+ *         schema:
+ *           type: string
+ *         description: L'heure de l'événement.
  *       - in: query
  *         name: date
  *         schema:
  *           type: string
- *         description: Filtrer par jour unique
+ *         description: La date de l'événement.
  *       - in: query
- *         name: from
+ *         name: timestamp
  *         schema:
  *           type: string
- *         description: Filtrer par date de début
- *       - in: query
- *         name: to
- *         schema:
- *           type: string
- *         description: Filtrer par date de fin
- *       - in: query
- *         name: medal
- *         schema:
- *           type: enum
- *           enum: [true, false, all]
- *           default: all
- *         description: Filtrer par épreuve qualificative pour une médaille
+ *         description: Le timestamp de l'événement.
  *     responses:
  *       200:
- *         description: Une liste de médailles
+ *         description: Une liste d'événements
  *       500:
  *         description: Erreur interne du serveur
  */
 app.get(
   "/api/events",
   query("page").default(1).isInt({ min: 1 }).escape(),
-  query("limit").default(LIMIT).isInt().escape(),
+  query("limit").default(200).isInt({ max: 200 }).escape(),
   query([
-    /* "sports", */
-    "code_sport",
+    "id",
+    "sport",
+    "type",
+    "teams",
     "location",
     "code_site",
+    "code_sport",
+    "for_medal",
+    "medal_type",
+    "time",
     "date",
-    "from",
-    "to",
+    "timestamp",
   ])
     .optional()
     .escape(),
-  query("medal").default("all").isIn(["true", "false", "all"]).escape(),
   async (req: Request, res: Response) => {
     const result = validationResult(req);
     if (result.isEmpty()) {
@@ -631,49 +653,22 @@ app.get(
       const page = data.page;
       const offset = (page - 1) * LIMIT;
       const limit = data.limit;
-
-      let conditions: string[] = [];
-      let values: string | boolean[] = [];
-      let i = 1;
       let events: any;
 
-      let query = "SELECT * FROM public.events";
+      let query = "SELECT * FROM events";
+      let conditions: string[] = [];
+      let values: string[] = [];
+      let i = 1;
       for (const key in data) {
-        if (key === "page" || key === "limit") continue;
-
-        if (data[key]) {
-          if (key === "from") {
-            // With this we want to get all "time" (timestamp without time zone) that are greater than the "from" date
-            conditions.push(`full_date >= $${i}`);
-            values.push(data[key]);
-            i++;
-          } else if (key === "to") {
-            // With this we want to get all "time" (timestamp without time zone) that are less than the "to" date
-            conditions.push(`full_date <= $${i}`);
-            values.push(data[key]);
-            i++;
-          } else if (key === "medal") {
-            if (data[key] === "true") {
-              conditions.push(`medal = $${i}`);
-              values.push(true);
-              i++;
-            } else if (data[key] === "false") {
-              conditions.push(`medal = $${i}`);
-              values.push(false);
-              i++;
-            }
-          } else {
-            conditions.push(`${key} = $${i}`);
-            values.push(data[key]);
-            i++;
-          }
+        if (key !== "page" && key !== "limit") {
+          conditions.push(`${key} = $${i}`);
+          values.push(data[key]);
+          i++;
         }
       }
-
       if (conditions.length > 0) {
         query += " WHERE " + conditions.join(" AND ");
       }
-
       query += ` LIMIT ${limit} OFFSET ${offset}`;
 
       try {
@@ -683,19 +678,13 @@ app.get(
         return res.status(500).send("Internal Server Error");
       }
 
-      events.rows.sort((a: any, b: any) => {
-        if (a.date === b.date) {
-          return a.full_date - b.full_date;
-        }
-        return a.date - b.date;
-      });
-
       return res.send({
         events: events.rows,
         currentPage: page,
         currentLimit: limit,
       });
     }
+
     return res.send({ errors: result.array() });
   }
 );
