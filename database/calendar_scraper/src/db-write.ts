@@ -11,25 +11,23 @@ export const write = async (data: TeamEvent[]) => {
   try {
     const createTableQuery = `CREATE TABLE IF NOT EXISTS events (
       id SERIAL PRIMARY KEY,
-      title VARCHAR(255),
-      time TIME,
-      name VARCHAR(255),
-      location VARCHAR(255),
+      event_id_for_date INTEGER,
+      sport VARCHAR(255),
+      type VARCHAR(255),
       teams VARCHAR(255)[],
-      isForMedal BOOLEAN,
-      date DATE,
-      full_date TIMESTAMP,
+      location VARCHAR(255),
       code_site VARCHAR(255),
       code_sport VARCHAR(255),
-      event_id_for_date VARCHAR(255),
-      type_medal VARCHAR(255)
+      for_medal BOOLEAN,
+      medal_type VARCHAR(255),
+      time TIME,
+      date DATE,
+      timestamp TIMESTAMP
     )`;
 
     await client.query(createTableQuery);
 
     for (const row of data) {
-      const checkQuery = `SELECT * FROM events WHERE title = $1 AND time = $2 AND name = $3 AND location = $4 AND teams = $5 AND isForMedal = $6 AND date = $7 AND full_date = $8 AND code_site = $9 AND code_sport = $10 AND event_id_for_date = $11 AND type_medal = $12`;
-
       if (row.time === null) row.time = "00:00";
 
       const date = parse(row.date, "yyyy-MM-dd", new Date());
@@ -37,59 +35,53 @@ export const write = async (data: TeamEvent[]) => {
       const dateWithTime = setMinutes(setHours(date, hours), minutes);
       let medalType: string | null = null;
 
-      const newLoc = getLocation(row.location || "");
-      const newSport = getSport(row.title || "");
+      const code_site = getLocation(row.location || "");
+      const code_sport = getSport(row.sport || "");
 
-      if (row.isForMedal && row.name) {
-        if (row.name.toLowerCase().includes("bronze")) medalType = "Bronze";
-        if (row.name.toLowerCase().includes("argent")) medalType = "Silver";
-        if (row.name.toLowerCase().includes("or")) medalType = "Gold";
+      if (row.isForMedal && row.type) {
+        if (row.type.toLowerCase().includes("bronze")) medalType = "Bronze";
+        if (row.type.toLowerCase().includes("argent")) medalType = "Silver";
+        if (row.type.toLowerCase().includes("or")) medalType = "Gold";
       }
 
+      const checkQuery = `SELECT * FROM events WHERE type = $1 AND code_site = $2 AND code_sport = $3 AND date = $4 AND time = $5 AND event_id_for_date = $6`;
       const checkValues = [
-        row.title,
-        row.time,
-        row.name,
-        row.location,
-        row.teams,
-        row.isForMedal,
+        row.type,
+        code_site,
+        code_sport,
         row.date,
-        dateWithTime,
-        newLoc,
-        newSport,
+        row.time,
         row.id,
-        medalType,
       ];
 
       const checkResult = await client.query(checkQuery, checkValues);
 
       if (checkResult.rows.length > 0) {
-        console.log("Event already exists, skipping");
+        console.info("Event already exists");
         continue;
       }
 
       const insertQuery = `
-            INSERT INTO events (title, time, name, location, teams, isForMedal, date, full_date, code_site, code_sport, event_id_for_date, type_medal)
+            INSERT INTO events (event_id_for_date, sport, type, teams, location, code_site, code_sport, for_medal, medal_type, time, date, timestamp)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-          `;
+            `;
 
       const values = [
-        row.title,
-        row.time,
-        row.name,
-        row.location,
+        row.id,
+        row.sport,
+        row.type,
         row.teams,
+        row.location,
+        code_site,
+        code_sport,
         row.isForMedal,
+        medalType,
+        row.time,
         row.date,
         dateWithTime,
-        newLoc,
-        newSport,
-        row.id,
-        medalType,
       ];
 
       await client.query(insertQuery, values);
-      console.log("Event inserted");
     }
   } catch (error) {
     await closeClient(client);

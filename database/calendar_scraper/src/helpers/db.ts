@@ -27,11 +27,20 @@ export const createClient = () => {
 };
 
 export const openClient = async (client: pg.Client) => {
-  await client.connect();
+  try {
+    await client.connect();
+  } catch (error) {
+    console.error("Error connecting to database", error);
+    process.exit(1);
+  }
   console.log("Connected to database");
 };
 
 export const closeClient = async (client: pg.Client) => {
-  await client.end();
+  try {
+    await client.end();
+  } catch (error) {
+    console.error("Error closing connection", error);
+  }
   console.log("Connection closed");
 };

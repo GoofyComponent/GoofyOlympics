@@ -1,10 +1,10 @@
 export interface CalendarEvent {
   id: number;
-  title: string;
+  sport: string;
   date: string;
   time: string | null;
   isForMedal: boolean;
-  name: string | null;
+  type: string | null;
   location: string | null;
 }
 
