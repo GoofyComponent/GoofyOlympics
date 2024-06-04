@@ -1,0 +1,29 @@
+name: Deploy olympics-frontend
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove old containers
+        run: |
+          if [ "$(docker ps -a -q --filter "name=front_goofy_olympics" | wc -l)" -gt 0 ]
+          then
+              echo "Previous containers found, stopping and removing them..."
+              docker stop $(docker ps -a -q --filter "name=front_goofy_olympics")
+              docker rm $(docker ps -a -q --filter "name=front_goofy_olympics")
+              docker container prune -f
+          else
+              echo "No previous containers found, continuing..."
+          fi
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.WEBSITE_ENV_FILE }}" >> website.env
+      - name: Deploy website
+        run: |
+          docker-compose --env-file website.env -f website.docker-compose.yml -p "olympics-frontend" up --build -d
+          docker image prune -f

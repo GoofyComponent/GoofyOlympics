@@ -1,5 +1,9 @@
 # GoofyOlympics
 
+## Demo
+
+Le site est disponible à l'adresse suivante : [https://goofyolympics.stroyco.eu/](https://goofyolympics.stroyco.eu/)
+
 ## Contexte
 
 La première partie du projet répond au critere mentionnée sur ce fichier [projet.pdf](./projet.pdf)

@@ -27,4 +27,4 @@ jobs:
           echo "${{ secrets.API_ENV_FILE }}" >> api.env
       - name: build DB
         run: |
-          docker-compose --env-file api.env -f api.docker-compose.yml up --build -d
+          docker-compose --env-file api.env -f api.docker-compose.yml -p "olympics-api" up --build -d

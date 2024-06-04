@@ -1,0 +1,14 @@
+services:
+  website:
+    container_name: front_goofy_olympics
+    image: destcom/olympics-frontend:latest
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      - API_URL=${API_URL:-https://api-olympics.stroyco.eu/}
+    networks:
+      - hosted
+
+networks:
+  hosted:
+    external: true

@@ -12,19 +12,22 @@ export const AuthContext = React.createContext<AuthContext | null>(null);
 const key = 'tanstack.auth.user';
 
 function getStoredUser() {
-  return localStorage.getItem(key);
+  const user = localStorage.getItem(key);
+  return user ? JSON.parse(user) : null;
 }
 
-function setStoredUser(user: string | null) {
+function setStoredUser(user: { username: string; role: string } | null) {
   if (user) {
-    localStorage.setItem(key, user);
+    localStorage.setItem(key, JSON.stringify(user));
   } else {
     localStorage.removeItem(key);
   }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<string | null>(getStoredUser());
+  const [user, setUser] = React.useState<{ username: string; role: string } | null>(
+    getStoredUser(),
+  );
   const isAuthenticated = !!user;
 
   const logout = React.useCallback(() => {
@@ -42,8 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ email: username, password: password }),
     })
       .then(() => {
-        setStoredUser(username);
-        setUser(username);
+        const newUser = { username, role: 'admin' };
+        setStoredUser(newUser);
+        setUser(newUser);
       })
       .catch((err) => {
         console.error(err);

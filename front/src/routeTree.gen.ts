@@ -67,34 +67,58 @@ const AuthAthletesIdRoute = AuthAthletesIdImport.update({
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
     '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
     '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
       preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
     '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
     '/_auth/analyze': {
+      id: '/_auth/analyze'
+      path: '/analyze'
+      fullPath: '/analyze'
       preLoaderRoute: typeof AuthAnalyzeImport
       parentRoute: typeof AuthImport
     }
     '/_auth/athletes': {
+      id: '/_auth/athletes'
+      path: '/athletes'
+      fullPath: '/athletes'
       preLoaderRoute: typeof AuthAthletesImport
       parentRoute: typeof AuthImport
     }
     '/_auth/home': {
+      id: '/_auth/home'
+      path: '/home'
+      fullPath: '/home'
       preLoaderRoute: typeof AuthHomeImport
       parentRoute: typeof AuthImport
     }
     '/_auth/athletes/$id': {
+      id: '/_auth/athletes/$id'
+      path: '/$id'
+      fullPath: '/athletes/$id'
       preLoaderRoute: typeof AuthAthletesIdImport
       parentRoute: typeof AuthAthletesImport
     }
@@ -103,15 +127,15 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([
+export const routeTree = rootRoute.addChildren({
   IndexRoute,
-  AuthRoute.addChildren([
+  AuthRoute: AuthRoute.addChildren({
     AuthAnalyzeRoute,
-    AuthAthletesRoute.addChildren([AuthAthletesIdRoute]),
+    AuthAthletesRoute: AuthAthletesRoute.addChildren({ AuthAthletesIdRoute }),
     AuthHomeRoute,
-  ]),
+  }),
   AppRoute,
   LoginRoute,
-])
+})
 
 /* prettier-ignore-end */

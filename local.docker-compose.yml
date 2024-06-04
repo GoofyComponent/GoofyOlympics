@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres_goofy_olympics
+    ports:
+      - "3000:3000"
     environment:
       - DB_USER=${DB_USER:-postgres}
       - DB_HOST=${DB_HOST:-localhost}
@@ -15,7 +17,6 @@ services:
       - DB_PORT=${DB_PORT:-5438}
     networks:
       - join
-      - hosted
   postgres_goofy_olympics:
     container_name: postgres_goofy_olympics
     image: postgres:13.4-bullseye
@@ -28,6 +29,8 @@ services:
       options:
         max-size: 10m
         max-file: "3"
+    ports:
+      - "5438:5432"
     networks:
       - join
     volumes:
@@ -40,6 +43,8 @@ services:
     restart: on-failure
     depends_on:
       - postgres_goofy_olympics
+    ports:
+      - "5439:80"
     networks:
       - join
     environment:
@@ -56,6 +61,20 @@ services:
         target: /pgadmin4/servers.json
       - source: pgpass
         target: /pgpass
+  website:
+    container_name: front_goofy_olympics
+    build:
+      context: ./front
+      dockerfile: front.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3001:3001"
+    environment:
+      - API_URL=${API_URL:-http://localhost:3000}
+    networks:
+      - join
 
 configs:
   pgpass:
@@ -76,5 +95,3 @@ configs:
 networks:
   join:
     driver: bridge
-  hosted:
-    external: true
