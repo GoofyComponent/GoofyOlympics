@@ -30,6 +30,13 @@ if (process.env.NODE_ENV === "production") {
   puppeteerOptions = {
     headless: false,
   };
+
+  if (process.platform === "darwin") {
+    puppeteerOptions = {
+      ...puppeteerOptions,
+      executablePath: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`,
+    };
+  }
 }
 
 export const scrape = async (
@@ -80,16 +87,16 @@ export const scrape = async (
       for (const event of allEvents) {
         const item: TeamEvent = {
           id: index,
-          title: "",
+          sport: "",
           time: null,
-          name: "",
+          type: "",
           location: "",
           teams: [],
           isForMedal: false,
           date: "",
         };
         item.id = index;
-        item.title = title || "";
+        item.sport = title || "";
 
         try {
           const eventTime = await event.$eval(
@@ -106,9 +113,9 @@ export const scrape = async (
             '[class*="TitleContainer"]',
             (el) => el.textContent
           );
-          item.name = eventName;
+          item.type = eventName;
         } catch (error) {
-          item.name = null;
+          item.type = null;
         }
 
         if (TEAM_VS_TEAM_SPORTS.includes(title || "")) {

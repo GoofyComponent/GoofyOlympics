@@ -1,25 +1,21 @@
 import { eachDayOfInterval } from "date-fns";
 import cron from "node-cron";
 import { scrape } from "./scraper";
-import { closeClient, write } from "./db-write";
+import { write } from "./db-write";
 import { writeToFile } from "./test";
+import { clearDb } from "./helpers/cleaners";
 
 const COMPETITION_START_DATE = new Date("2024-07-24");
 const COMPETITION_END_DATE =
   process.env.NODE_ENV === "production"
     ? new Date("2024-08-11")
-    : new Date("2024-07-24");
+    : COMPETITION_START_DATE;
 const CRON_SCHEDULE =
   process.env.NODE_ENV === "production" ? "0 4 * * *" : "*/20 * * * *";
 const BASE_URL = "https://olympics.com/fr/paris-2024/calendrier/";
 
 const main = async () => {
-  if (process.env.NODE_ENV === "production") {
-    console.log("Production mode");
-  } else {
-    console.log("Development mode");
-  }
-
+  console.log("Scraping data");
   const allDates = eachDayOfInterval({
     start: COMPETITION_START_DATE,
     end: COMPETITION_END_DATE,
@@ -39,18 +35,20 @@ const main = async () => {
     console.log("Error writing data");
   }
 
-  closeClient();
-  return isSuccess;
+  return;
 };
 
 if (process.env.NODE_ENV !== "production") {
+  console.log("Running in development mode");
+  await clearDb();
   await main();
-  process.exit(0);
 } else {
+  console.log("Running in production mode");
+  await clearDb();
   await main();
   cron.schedule(CRON_SCHEDULE, async () => {
-    console.log("Running cron job");
+    console.log("Running cron job at ", new Date());
     await main();
-    console.log("Cron job finished");
+    console.log("Cron job finished at ", new Date());
   });
 }

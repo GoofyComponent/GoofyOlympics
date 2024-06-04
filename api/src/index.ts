@@ -20,6 +20,7 @@ if (process.env.NODE_ENV === "production") {
     database: process.env.DB_DATABASE,
     password: process.env.DB_PASSWORD,
     port: parseInt(process.env.DB_PORT || "5432"),
+    timezone: "UTC",
   };
 } else {
   dbConfig = {
@@ -28,10 +29,17 @@ if (process.env.NODE_ENV === "production") {
     host: "localhost",
     port: 5438,
     database: "goofy_olympics",
+    timezone: "UTC",
   };
 }
 
 const { Client } = pg;
+pg.types.setTypeParser(pg.types.builtins.DATE, (value) => {
+  return value;
+});
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (value) => {
+  return value;
+});
 const client = new Client(dbConfig);
 await client.connect();
 
@@ -527,6 +535,156 @@ app.get(
         medals: pays,
       });
     }
+    return res.send({ errors: result.array() });
+  }
+);
+
+/**
+ * @swagger
+ * /api/events:
+ *   get:
+ *     summary: Récupère une liste d'événements
+ *     description: Récupère une liste paginée d'événements en fonction des paramètres de requête fournis.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: Le numéro de la page à récupérer.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 200
+ *           maximum: 200
+ *         description: Le nombre d'événements à récupérer par page.
+ *       - in: query
+ *         name: id
+ *         schema:
+ *           type: string
+ *         description: L'identifiant de l'événement.
+ *       - in: query
+ *         name: sport
+ *         schema:
+ *           type: string
+ *         description: Le sport de l'événement.
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Le type de l'événement.
+ *       - in: query
+ *         name: teams
+ *         schema:
+ *           type: string
+ *         description: Les équipes de l'événement.
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: L'emplacement de l'événement.
+ *       - in: query
+ *         name: code_site
+ *         schema:
+ *           type: string
+ *         description: Le code du site de l'événement.
+ *       - in: query
+ *         name: code_sport
+ *         schema:
+ *           type: string
+ *         description: Le code du sport de l'événement.
+ *       - in: query
+ *         name: for_medal
+ *         schema:
+ *           type: string
+ *         description: Si l'événement est pour une médaille.
+ *       - in: query
+ *         name: medal_type
+ *         schema:
+ *           type: string
+ *         description: Le type de médaille de l'événement.
+ *       - in: query
+ *         name: time
+ *         schema:
+ *           type: string
+ *         description: L'heure de l'événement.
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *         description: La date de l'événement.
+ *       - in: query
+ *         name: timestamp
+ *         schema:
+ *           type: string
+ *         description: Le timestamp de l'événement.
+ *     responses:
+ *       200:
+ *         description: Une liste d'événements
+ *       500:
+ *         description: Erreur interne du serveur
+ */
+app.get(
+  "/api/events",
+  query("page").default(1).isInt({ min: 1 }).escape(),
+  query("limit").default(200).isInt({ max: 200 }).escape(),
+  query([
+    "id",
+    "sport",
+    "type",
+    "teams",
+    "location",
+    "code_site",
+    "code_sport",
+    "for_medal",
+    "medal_type",
+    "time",
+    "date",
+    "timestamp",
+  ])
+    .optional()
+    .escape(),
+  async (req: Request, res: Response) => {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const data = matchedData(req);
+      const page = data.page;
+      const offset = (page - 1) * LIMIT;
+      const limit = data.limit;
+      let events: any;
+
+      let query = "SELECT * FROM events";
+      let conditions: string[] = [];
+      let values: string[] = [];
+      let i = 1;
+      for (const key in data) {
+        if (key !== "page" && key !== "limit") {
+          conditions.push(`${key} = $${i}`);
+          values.push(data[key]);
+          i++;
+        }
+      }
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      try {
+        events = await client.query(query, values);
+      } catch (error) {
+        console.error("Error executing query", error.stack);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      return res.send({
+        events: events.rows,
+        currentPage: page,
+        currentLimit: limit,
+      });
+    }
+
     return res.send({ errors: result.array() });
   }
 );

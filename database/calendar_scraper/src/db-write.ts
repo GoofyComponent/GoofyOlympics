@@ -1,124 +1,94 @@
-import pg from "pg";
-
 import { TeamEvent } from "./type";
 import { parse, setHours, setMinutes } from "date-fns";
 import { getLocation } from "./helpers/sites";
 import { getSport } from "./helpers/sports";
-
-let dbConfig: object;
-if (process.env.NODE_ENV === "production") {
-  dbConfig = {
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT || "5432"),
-  };
-} else {
-  dbConfig = {
-    user: "postgres",
-    password: "postgres",
-    host: "localhost",
-    port: 5438,
-    database: "goofy_olympics",
-  };
-}
-
-const { Client } = pg;
-const client = new Client(dbConfig);
+import { closeClient, createClient, openClient } from "./helpers/db";
 
 export const write = async (data: TeamEvent[]) => {
-  await openClient();
+  const client = createClient();
+  await openClient(client);
 
   try {
     const createTableQuery = `CREATE TABLE IF NOT EXISTS events (
       id SERIAL PRIMARY KEY,
-      title VARCHAR(255),
-      time TIME,
-      name VARCHAR(255),
-      location VARCHAR(255),
+      event_id_for_date INTEGER,
+      sport VARCHAR(255),
+      type VARCHAR(255),
       teams VARCHAR(255)[],
-      isForMedal BOOLEAN,
-      date DATE,
-      full_date TIMESTAMP,
+      location VARCHAR(255),
       code_site VARCHAR(255),
       code_sport VARCHAR(255),
-      event_id_for_date VARCHAR(255)
+      for_medal BOOLEAN,
+      medal_type VARCHAR(255),
+      time TIME,
+      date DATE,
+      timestamp TIMESTAMP
     )`;
 
     await client.query(createTableQuery);
 
     for (const row of data) {
-      const checkQuery = `SELECT * FROM events WHERE title = $1 AND time = $2 AND name = $3 AND location = $4 AND teams = $5 AND isForMedal = $6 AND date = $7 AND full_date = $8 AND code_site = $9 AND code_sport = $10 AND event_id_for_date = $11`;
-
       if (row.time === null) row.time = "00:00";
 
       const date = parse(row.date, "yyyy-MM-dd", new Date());
       const [hours, minutes] = row.time.split(":").map(Number);
       const dateWithTime = setMinutes(setHours(date, hours), minutes);
+      let medalType: string | null = null;
 
-      const newLoc = await getLocation(row.location || "");
-      const newSport = getSport(row.title || "");
+      const code_site = getLocation(row.location || "");
+      const code_sport = getSport(row.sport || "");
 
+      if (row.isForMedal && row.type) {
+        if (row.type.toLowerCase().includes("bronze")) medalType = "Bronze";
+        if (row.type.toLowerCase().includes("argent")) medalType = "Silver";
+        if (row.type.toLowerCase().includes("or")) medalType = "Gold";
+      }
+
+      const checkQuery = `SELECT * FROM events WHERE type = $1 AND code_site = $2 AND code_sport = $3 AND date = $4 AND time = $5 AND event_id_for_date = $6`;
       const checkValues = [
-        row.title,
-        row.time,
-        row.name,
-        row.location,
-        row.teams,
-        row.isForMedal,
+        row.type,
+        code_site,
+        code_sport,
         row.date,
-        dateWithTime,
-        newLoc,
-        newSport,
+        row.time,
         row.id,
       ];
 
       const checkResult = await client.query(checkQuery, checkValues);
 
       if (checkResult.rows.length > 0) {
-        console.log("Event already exists, skipping");
+        console.info("Event already exists");
         continue;
       }
 
       const insertQuery = `
-            INSERT INTO events (title, time, name, location, teams, isForMedal, date, full_date, code_site, code_sport, event_id_for_date)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-          `;
+            INSERT INTO events (event_id_for_date, sport, type, teams, location, code_site, code_sport, for_medal, medal_type, time, date, timestamp)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            `;
 
       const values = [
-        row.title,
-        row.time,
-        row.name,
-        row.location,
+        row.id,
+        row.sport,
+        row.type,
         row.teams,
+        row.location,
+        code_site,
+        code_sport,
         row.isForMedal,
+        medalType,
+        row.time,
         row.date,
         dateWithTime,
-        newLoc,
-        newSport,
-        row.id,
       ];
 
       await client.query(insertQuery, values);
-      console.log("Event inserted");
     }
   } catch (error) {
+    await closeClient(client);
     console.error(error);
     return false;
   } finally {
+    await closeClient(client);
     return true;
   }
-};
-
-export const openClient = async () => {
-  await client.connect();
-
-  console.log("Connected to database");
-};
-
-export const closeClient = async () => {
-  await client.end();
-
-  console.log("Connection closed");
 };
