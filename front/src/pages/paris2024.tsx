@@ -3,13 +3,16 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapRef } from 'react-map-gl/maplibre';
 
+import { Calendar } from '@/components/calendar/Sections';
 import { LocationSection, MapComponent } from '@/components/map/Sections';
-import { MainTitle /* , SubTitle */ } from '@/components/title';
+import { MainTitle, SubTitle } from '@/components/title';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent /* , TabsList, TabsTrigger */ } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Location, Shop } from '@/types/MapTypes';
 
 export const Paris2024Page = () => {
+  const [selectedTab, setSelectedTab] = useState<'map' | 'calendar'>('map');
+
   const [selectedLocation, setSelectedLocation] = useState<Location | Shop | null>(null);
 
   const [selectedFilter, setSelectedFilter] = useState<Record<string, boolean>>({
@@ -42,16 +45,42 @@ export const Paris2024Page = () => {
 
   return (
     <>
-      <MainTitle>Olympic Games Paris 2024</MainTitle>
-      <p className="font-light text-xl">26 July - 11 August, 2024</p>
+      <div className="flex justify-between">
+        <div>
+          <MainTitle>Olympic Games Paris 2024</MainTitle>
+          <p className="font-light text-xl">26 July - 11 August, 2024</p>
+        </div>
+        <div className="my-auto">
+          <Tabs
+            value={selectedTab}
+            onValueChange={(value) => {
+              setSelectedTab(value as 'map' | 'calendar');
+            }}
+          >
+            <TabsList className="min-w-[300px]">
+              <TabsTrigger value="map" className="w-full whitespace-normal text-base">
+                Map
+              </TabsTrigger>
+              <TabsTrigger
+                value="calendar"
+                className="w-full whitespace-normal text-base"
+              >
+                Calendar
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
       <div className="mt-4">
-        <Tabs defaultValue="map">
-          {/* <TabsList>
-            <TabsTrigger value="map">Interactive map</TabsTrigger>
-            <TabsTrigger value="calendar">Events calendar</TabsTrigger>
-          </TabsList> */}
-          <TabsContent value="map" className="w-full ">
-            {/* <SubTitle className="py-2">Competition sites</SubTitle> */}
+        <Tabs
+          /*           defaultValue="map"
+          onValueChange={(value) => {
+            setSelectedTab(value as 'map' | 'calendar');
+          }} */
+          value={selectedTab}
+        >
+          <TabsContent value="map" className="w-full">
+            <SubTitle className="py-2">Competition sites</SubTitle>
             <div className="flex py-2">
               <p className="font-light mr-2">Filters :</p>
               <div className="flex flex-wrap gap-2">
@@ -123,7 +152,9 @@ export const Paris2024Page = () => {
               />
             </div>
           </TabsContent>
-          <TabsContent value="calendar">Change your password here.</TabsContent>
+          <TabsContent value="calendar">
+            <Calendar />
+          </TabsContent>
         </Tabs>
       </div>
     </>
