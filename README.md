@@ -4,6 +4,12 @@
 
 Le site est disponible à l'adresse suivante : [https://goofyolympics.stroyco.eu/](https://goofyolympics.stroyco.eu/)
 
+## Comment lancer le projet
+
+```bash
+docker compose -f local.docker-compose.yml -p "local_goofyolympics" up -d --build
+```
+
 ## Contexte
 
 La première partie du projet répond au critere mentionnée sur ce fichier [projet.pdf](./projet.pdf)

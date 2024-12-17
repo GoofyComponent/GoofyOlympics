@@ -11,10 +11,10 @@ services:
       - "3000:3000"
     environment:
       - DB_USER=${DB_USER:-postgres}
-      - DB_HOST=${DB_HOST:-localhost}
+      - DB_HOST=${DB_HOST:-postgres_goofy_olympics}
       - DB_DATABASE=${DB_DATABASE:-goofy_olympics}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_PORT=${DB_PORT:-5438}
+      - DB_PORT=${DB_PORT:-5432}
     networks:
       - join
   postgres_goofy_olympics:
@@ -70,7 +70,7 @@ services:
     depends_on:
       - api
     ports:
-      - "3001:3001"
+      - "3001:3000"
     #environment:
     #- API_URL=${API_URL:-http://localhost:3000}
     networks:
