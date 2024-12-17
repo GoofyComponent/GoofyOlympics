@@ -1,9 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { Paris2024Page } from '@/pages/paris2024';
 import { Location } from '@/types/MapTypes';
 
 export const Route = createFileRoute('/_mainapp/2024')({
+  beforeLoad: async () => {
+    throw redirect({
+      to: '/',
+    });
+  },
   loader: async () => {
     const resLocation = await fetch(
       'https://data.paris2024.org/api/explore/v2.1/catalog/datasets/paris-2024-sites-de-competition/records?limit=61&lang=en',
