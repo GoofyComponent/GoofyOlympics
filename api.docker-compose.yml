@@ -4,10 +4,6 @@ services:
     build:
       context: ./api
       dockerfile: api.Dockerfile
-    entrypoint: |
-      sh -c "npx --yes prisma migrate deploy"
-      sh -c "npm run convert-csv"
-      sh -c "npm run start"
     restart: unless-stopped
     depends_on:
       postgres_goofy_olympics:
@@ -86,6 +82,8 @@ configs:
 networks:
   join:
     driver: bridge
+  hosted:
+    external: true
 
 volumes:
   postgres_data:
