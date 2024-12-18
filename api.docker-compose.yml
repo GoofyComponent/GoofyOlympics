@@ -4,6 +4,10 @@ services:
     build:
       context: ./api
       dockerfile: api.Dockerfile
+    entrypoint: |
+      sh -c "npx --yes prisma migrate deploy"
+      sh -c "npm run convert-csv"
+      sh -c "npm run start"
     restart: unless-stopped
     depends_on:
       - postgres_goofy_olympics
@@ -34,9 +38,11 @@ services:
     restart: on-failure
     depends_on:
       - postgres_goofy_olympics
+    ports:
+      - "5439:80"
     networks:
       - join
-      - hosted
+      #- hosted
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-user@mail.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}

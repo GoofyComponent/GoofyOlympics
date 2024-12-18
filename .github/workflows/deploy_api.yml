@@ -24,7 +24,8 @@ jobs:
           docker image prune -f
       - name: Create .env file
         run: |
-          echo "${{ secrets.API_ENV_FILE }}" >> api.env
+          cd api
+          echo "${{ secrets.API_ENV_FILE }}" >> .env
       - name: build DB
         run: |
-          docker-compose --env-file api.env -f api.docker-compose.yml -p "olympics-api" up --build -d
+          docker-compose --env-file ./api/.env -f api.docker-compose.yml -p "olympics-api" up --build -d
