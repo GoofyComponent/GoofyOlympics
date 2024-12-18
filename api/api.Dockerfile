@@ -5,8 +5,10 @@ COPY package.json ./
 
 RUN npm install
 COPY . .
-
 ENV NODE_ENV=production
 ENV TZ=Etc/UTC
+
+RUN npx prisma migrate deploy
+RUN npm run convert-csv
 
 CMD ["npm", "start"]
