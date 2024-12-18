@@ -8,11 +8,7 @@ services:
     depends_on:
       - postgres_goofy_olympics
     environment:
-      - DB_USER=${DB_USER:-postgres}
-      - DB_HOST=${DB_HOST:-localhost}
-      - DB_DATABASE=${DB_DATABASE:-goofy_olympics}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_PORT=${DB_PORT:-5438}
+      - DATABASE_URL="postgresql://postgres:postgres@postgres_goofy_olympics:5432/goofy_olympics?schema=public"
     networks:
       - join
       - hosted
