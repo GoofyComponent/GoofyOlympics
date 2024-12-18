@@ -30,13 +30,13 @@ services:
         max-size: 10m
         max-file: "3"
     ports:
-      - "5438:5432"
+      - "5432:5432"
     networks:
       - join
     volumes:
       - ${POSTGRES_PATH:-./docker/postgres-data}:/var/lib/postgresql/data:rw
-      - ./database/jo_export.sql:/docker-entrypoint-initdb.d/create_tables.sql
-      - ./database/noc_export.sql:/docker-entrypoint-initdb.d/create_tables2.sql
+#      - ./database/jo_export.sql:/docker-entrypoint-initdb.d/create_tables.sql
+#      - ./database/noc_export.sql:/docker-entrypoint-initdb.d/create_tables2.sql
   pgadmin:
     container_name: pgadmin_goofy_olympics
     image: dpage/pgadmin4
