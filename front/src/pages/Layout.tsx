@@ -4,6 +4,7 @@ import { User } from 'lucide-react';
 import olympics_logo from '@/assets/goofyolympics_logo.svg';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuthStore } from '@/store';
 
 export const Layout = () => {
   return (
@@ -18,6 +19,8 @@ export const Layout = () => {
 };
 
 const Header = () => {
+  const isLogged = useAuthStore((state) => state.isLogged);
+
   return (
     <header className="flex justify-between h-20 w-full">
       <div className="flex justify-start">
@@ -54,15 +57,28 @@ const Header = () => {
           </Link>
         </div>
       </div>
-      {/* TODO: Solution temporaire - changer par un burger */}
-      <div className="my-auto mr-4 hidden sm:block">
-        <Button variant={'outline'} asChild>
-          <Link to="/login">
-            <User size={18} className="mr-2" />
-            <p>LOGIN</p>
-          </Link>
-        </Button>
-      </div>
+      {!isLogged && (
+        <div className="my-auto mr-4 hidden sm:block">
+          <Button variant={'outline'} asChild>
+            <Link to="/login">
+              <User size={18} className="mr-2" />
+              <p>LOGIN</p>
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {/* TODO A remplacer par un moyen de se déco & ajouter la persist a zustand */}
+      {/*       {isLogged && (
+        <div className="my-auto mr-4 hidden sm:block">
+          <Button variant={'outline'} asChild>
+            <Link to="/register">
+              <User size={18} className="mr-2" />
+              <p>REGISTER</p>
+            </Link>
+          </Button>
+        </div>
+      )} */}
     </header>
   );
 };

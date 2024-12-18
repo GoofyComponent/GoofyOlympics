@@ -20,6 +20,10 @@ export function MockServer({ environment = 'development' }) {
       this.passthrough('https://events.mapbox.com/**');
       this.passthrough('https://api.maptiler.com/**');
       this.passthrough('https://data.paris2024.org/**');
+      this.passthrough('https://restcountries.com/**');
+      this.passthrough('https://api.goofyolympics.com/**');
+      //Passtrough everything else
+      this.passthrough();
     },
   });
 }

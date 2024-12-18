@@ -11,15 +11,22 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as RegisterImport } from './routes/register'
 import { Route as LoginImport } from './routes/login'
 import { Route as MainappImport } from './routes/_mainapp'
 import { Route as MainappIndexImport } from './routes/_mainapp/index'
 import { Route as MainappCountriesImport } from './routes/_mainapp/countries'
+import { Route as MainappCommunityImport } from './routes/_mainapp/community'
 import { Route as MainappAthletesImport } from './routes/_mainapp/athletes'
 import { Route as MainappAppImport } from './routes/_mainapp/app'
 import { Route as Mainapp2024Import } from './routes/_mainapp/2024'
 
 // Create/Update Routes
+
+const RegisterRoute = RegisterImport.update({
+  path: '/register',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const LoginRoute = LoginImport.update({
   path: '/login',
@@ -38,6 +45,11 @@ const MainappIndexRoute = MainappIndexImport.update({
 
 const MainappCountriesRoute = MainappCountriesImport.update({
   path: '/countries',
+  getParentRoute: () => MainappRoute,
+} as any)
+
+const MainappCommunityRoute = MainappCommunityImport.update({
+  path: '/community',
   getParentRoute: () => MainappRoute,
 } as any)
 
@@ -68,6 +80,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/register': {
+      preLoaderRoute: typeof RegisterImport
+      parentRoute: typeof rootRoute
+    }
     '/_mainapp/2024': {
       preLoaderRoute: typeof Mainapp2024Import
       parentRoute: typeof MainappImport
@@ -78,6 +94,10 @@ declare module '@tanstack/react-router' {
     }
     '/_mainapp/athletes': {
       preLoaderRoute: typeof MainappAthletesImport
+      parentRoute: typeof MainappImport
+    }
+    '/_mainapp/community': {
+      preLoaderRoute: typeof MainappCommunityImport
       parentRoute: typeof MainappImport
     }
     '/_mainapp/countries': {
@@ -98,10 +118,12 @@ export const routeTree = rootRoute.addChildren([
     Mainapp2024Route,
     MainappAppRoute,
     MainappAthletesRoute,
+    MainappCommunityRoute,
     MainappCountriesRoute,
     MainappIndexRoute,
   ]),
   LoginRoute,
+  RegisterRoute,
 ])
 
 /* prettier-ignore-end */

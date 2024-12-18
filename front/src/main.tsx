@@ -4,7 +4,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { MockServer } from './mirage';
+//import { MockServer } from './mirage';
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 
@@ -15,12 +15,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-if (import.meta.env.MODE === 'development') {
+/* if (import.meta.env.MODE === 'development') {
   // You can't use import in a conditional so we're using require() so no
   // Mirage JS code will ever reach your production build.
   //mirageSetup();
   MockServer({ environment: 'development' });
-}
+} */
 
 const rootElement = document.getElementById('root')!;
 if (!rootElement.innerHTML) {
