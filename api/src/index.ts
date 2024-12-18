@@ -8,13 +8,15 @@ import {Server} from 'socket.io';
 import {PrismaClient} from '@prisma/client'
 
 import swaggerUi from "swagger-ui-express";
-import swaggerJSDocs from "swagger-jsdoc";
+import { swaggerSpec } from "./config/swagger";
 
 import {createServer} from "node:http";
 
 import questionRoutes from './routes/questions';
 import authRoutes from './routes/auth';
 import athletesRoutes from './routes/athletes';
+import analysisRoutes from './routes/analytics';
+import eventsRoutes from './routes/events';
 
 const prisma = new PrismaClient()
 const LIMIT = 10;
@@ -95,21 +97,12 @@ app.use(
     })
 );
 
-const SWAGGER_OPTIONS = {
-    failOnErrors: true,
-    definition: {
-        openapi: "3.0.0",
-        info: {
-            title: "Unofficial Olympics API",
-            description:
-                "An unofficial API for the Olympics, providing data on athletes and regions since 1896 to 2016, data from the Olympics dataset on Kaggle (https://www.kaggle.com/datasets/heesoo37/120-years-of-olympic-history-athletes-and-results).",
-            version: "1.0.0",
-        },
-    },
-    apis: ["./src/index.ts"],
-};
-const swaggerSpec = swaggerJSDocs(SWAGGER_OPTIONS);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+});
 
 /**
  * @swagger
@@ -125,7 +118,6 @@ app.get("/", (req: Request, res: Response) => {
         "Welcome to the unofficial Olympics API, please use the /api endpoint to access the data. For more information, visit: https://api-olympics.stroyco.eu/api-docs/"
     );
 });
-
 
 /**
  * @swagger
@@ -175,8 +167,7 @@ app.get("/", (req: Request, res: Response) => {
  *       500:
  *         description: Erreur interne du serveur
  */
-app.get(
-    "/api/regions",
+app.get("/api/regions",
     query("page").default(1).isInt({min: 1}).escape(),
     query("limit").default(LIMIT).isInt({max: 50}).escape(),
     query(["id", "noc", "region", "notes"]).optional().escape(),
@@ -184,41 +175,45 @@ app.get(
         const result = validationResult(req);
         if (result.isEmpty()) {
             const data = matchedData(req);
-            const page = data.page;
-            const offset = (page - 1) * LIMIT;
-            const limit = data.limit;
-            let regions: any;
-
-            let query = "SELECT * FROM noc_regions";
-            let conditions: string[] = [];
-            let values: string[] = [];
-            let i = 1;
-            for (const key in data) {
-                if (key !== "page" && key !== "limit") {
-                    conditions.push(`${key} = $${i}`);
-                    values.push(data[key]);
-                    i++;
-                }
-            }
-            if (conditions.length > 0) {
-                query += " WHERE " + conditions.join(" AND ");
-            }
-            query += ` LIMIT ${limit} OFFSET ${offset}`;
+            const page = parseInt(data.page as string);
+            const limit = parseInt(data.limit as string);
+            const offset = (page - 1) * limit;
 
             try {
-                regions = await prisma.$queryRawUnsafe(query, values);
-            } catch (error) {
-                console.error("Error executing query", error.stack);
-                return res.status(500).send("Internal Server Error");
-            }
+                // Build where clause
+                const where: any = {};
+                for (const key in data) {
+                    if (key !== "page" && key !== "limit" && data[key]) {
+                        if (key === "id") {
+                            where[key] = parseInt(data[key]);
+                        } else {
+                            where[key] = data[key];
+                        }
+                    }
+                }
 
-            return res.send({
-                regions: regions,
-                currentPage: page,
-                currentLimit: limit,
-            });
+                const [regions, total] = await Promise.all([
+                    prisma.noc_regions.findMany({
+                        where,
+                        skip: offset,
+                        take: limit
+                    }),
+                    prisma.noc_regions.count({ where })
+                ]);
+
+                return res.json({
+                    regions,
+                    total,
+                    currentPage: page,
+                    currentLimit: limit,
+                    totalPages: Math.ceil(total / limit)
+                });
+            } catch (error) {
+                console.error("Error executing query", error);
+                return res.status(500).json({ message: "Internal Server Error" });
+            }
         }
-        return res.send({errors: result.array()});
+        return res.status(400).json({ errors: result.array() });
     }
 );
 
@@ -233,226 +228,70 @@ app.get(
  *         schema:
  *           type: string
  *         description: Filtrer par NOC (National Olympic Committee)
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: Filtrer par année
  *     responses:
  *       200:
  *         description: Une liste de médailles
  *       500:
  *         description: Erreur interne du serveur
  */
-app.get(
-    "/api/medals",
-    query(["noc"]).optional().escape(),
+app.get("/api/medals",
+    query(["noc", "year"]).optional().escape(),
     async (req: Request, res: Response) => {
         const result = validationResult(req);
         if (result.isEmpty()) {
             const data = matchedData(req);
-            let values: string[] = [];
-            let medals: any;
-
-            let query =
-                "SELECT count(medal), medal, noc FROM public.athlete_events GROUP BY medal, noc";
-
-            if (data.noc) {
-                query += " HAVING noc = $1";
-                values.push(data.noc.toUpperCase());
-            }
 
             try {
-                medals = await prisma.$queryRawUnsafe(query, values);
-            } catch (error) {
-                console.error("Error executing query", error.stack);
-                return res.status(500).send("Internal Server Error");
-            }
-
-            let pays: any = {};
-            medals.rows.forEach((element: any) => {
-                pays[element.noc] = pays[element.noc] || [];
-                if (element.medal === "NA") {
-                    return;
-                }
-
-                pays[element.noc].push({
-                    medal: element.medal,
-                    count: element.count,
+                const medals = await prisma.athlete_events.groupBy({
+                    by: ['medal', 'noc'],
+                    where: {
+                        ...(data.noc ? { noc: data.noc.toUpperCase() } : {}),
+                        ...(data.year ? { year: parseInt(data.year) } : {})
+                    },
+                    _count: {
+                        medal: true
+                    },
+                    having: {
+                        medal: {
+                            not: 'NA'
+                        }
+                    }
                 });
-            });
 
-            return res.send({
-                medals: pays,
-            });
-        }
-        return res.send({errors: result.array()});
-    }
-);
+                // Organiser les résultats par pays
+                const pays: Record<string, Array<{ medal: string; count: number }>> = {};
+                medals.forEach((element) => {
+                    if (element.noc && typeof element.noc === 'string' && element.noc.length > 0) {
+                        if (!pays[element.noc]) {
+                            pays[element.noc] = [];
+                        }
 
-/**
- * @swagger
- * /api/events:
- *   get:
- *     summary: Récupère une liste d'événements
- *     description: Récupère une liste paginée d'événements en fonction des paramètres de requête fournis.
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *           minimum: 1
- *         description: Le numéro de la page à récupérer.
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 200
- *           maximum: 200
- *         description: Le nombre d'événements à récupérer par page.
- *       - in: query
- *         name: id
- *         schema:
- *           type: string
- *         description: L'identifiant de l'événement.
- *       - in: query
- *         name: sport
- *         schema:
- *           type: string
- *         description: Le sport de l'événement.
- *       - in: query
- *         name: type
- *         schema:
- *           type: string
- *         description: Le type de l'événement.
- *       - in: query
- *         name: teams
- *         schema:
- *           type: string
- *         description: Les équipes de l'événement.
- *       - in: query
- *         name: location
- *         schema:
- *           type: string
- *         description: L'emplacement de l'événement.
- *       - in: query
- *         name: code_site
- *         schema:
- *           type: string
- *         description: Le code du site de l'événement.
- *       - in: query
- *         name: code_sport
- *         schema:
- *           type: string
- *         description: Le code du sport de l'événement.
- *       - in: query
- *         name: for_medal
- *         schema:
- *           type: string
- *         description: Si l'événement est pour une médaille.
- *       - in: query
- *         name: medal_type
- *         schema:
- *           type: string
- *         description: Le type de médaille de l'événement.
- *       - in: query
- *         name: time
- *         schema:
- *           type: string
- *         description: L'heure de l'événement.
- *       - in: query
- *         name: date
- *         schema:
- *           type: string
- *         description: La date de l'événement.
- *       - in: query
- *         name: timestamp
- *         schema:
- *           type: string
- *         description: Le timestamp de l'événement.
- *     responses:
- *       200:
- *         description: Une liste d'événements
- *       500:
- *         description: Erreur interne du serveur
- */
-app.get(
-    "/api/events",
-    query("page").default(1).isInt({min: 1}).escape(),
-    query("limit").default(200).isInt({max: 200}).escape(),
-    query([
-        "id",
-        "sport",
-        "type",
-        "teams",
-        "location",
-        "code_site",
-        "code_sport",
-        "for_medal",
-        "medal_type",
-        "time",
-        "date",
-        "timestamp",
-    ])
-        .optional()
-        .escape(),
-    async (req: Request, res: Response) => {
-        const result = validationResult(req);
-        if (result.isEmpty()) {
-            const data = matchedData(req);
-            const page = data.page;
-            const offset = (page - 1) * LIMIT;
-            const limit = data.limit;
-            let events: any;
+                        if (element.medal && element.medal !== 'NA') {
+                            pays[element.noc].push({
+                                medal: element.medal,
+                                count: element._count.medal
+                            });
+                        }
+                    }
+                });
 
-            let query = "SELECT * FROM events";
-            let conditions: string[] = [];
-            let values: string[] = [];
-            let i = 1;
-            for (const key in data) {
-                if (key !== "page" && key !== "limit") {
-                    conditions.push(`${key} = $${i}`);
-                    values.push(data[key]);
-                    i++;
-                }
-            }
-            if (conditions.length > 0) {
-                query += " WHERE " + conditions.join(" AND ");
-            }
-            query += ` LIMIT ${limit} OFFSET ${offset}`;
-
-            try {
-                events = await prisma.$queryRawUnsafe(query, values);
+                return res.json({ medals: { medals: pays } });
             } catch (error) {
-                console.error("Error executing query", error.stack);
-                return res.status(500).send("Internal Server Error");
+                console.error("Error executing query", error);
+                return res.status(500).json({message: "Internal Server Error"});
             }
-
-            return res.send({
-                events: events,
-                currentPage: page,
-                currentLimit: limit,
-            });
         }
-
-        return res.send({errors: result.array()});
+        return res.status(400).json({errors: result.array()});
     }
 );
-
-// Routes
-app.use('/api/questions', questionRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/athletes', athletesRoutes);
 
 io.on('connection', (socket) => {
     console.log('a user connected');
-    socket.on('chat_message', async (msg) => {
-        let result;
-        try {
-            // result = await db.run('INSERT INTO messages (content) VALUES (?)', msg);
-        } catch (e) {
-            // TODO handle the failure
-            return;
-        }
-        // include the offset with the message
-        io.emit('chat_message', msg);
-    });
 
     socket.on('submit_answer', async (data: { questionId: number, answerId: number, userId: number }) => {
         try {
@@ -521,7 +360,6 @@ io.on('connection', (socket) => {
         }
     });
 
-
     socket.on('disconnect', () => {
         console.log('Un utilisateur s\'est déconnecté');
     });
@@ -540,3 +378,10 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
     process.exit();
 });
+
+// Routes
+app.use('/api/questions', questionRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/athletes', athletesRoutes);
+app.use('/api/analysis', analysisRoutes);
+app.use('/api/events', eventsRoutes);

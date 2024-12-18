@@ -31,7 +31,7 @@ export default function MedalsPage() {
   const medals = useLoaderData({ from: '/_mainapp/countries' });
   const medalsResp: {
     [nocCodes: string]: Medal[];
-  } = medals.medals.medals;
+  } = medals;
 
   useEffect(() => {
     if (medalsResp) {
