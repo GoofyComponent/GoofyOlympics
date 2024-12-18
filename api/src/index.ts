@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import express, {Express, json, Request, Response} from "express";
-import {body, matchedData, query, validationResult} from "express-validator";
+import {matchedData, query, validationResult} from "express-validator";
 import helmet from "helmet";
 import session from "express-session";
 import cors from "cors";
@@ -49,6 +49,7 @@ const port = process.env.PORT || 3000;
 const expiryDate = new Date(Date.now() + 60 * 60 * 1000);
 const allowedOrigins = [
     "http://localhost:5173",
+    "http://localhost:3000",
     "https://goofyolympics.stroyco.eu",
 ];
 app.use(json());
@@ -68,6 +69,8 @@ app.use(
             }
             return callback(null, true);
         },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
     })
 );
 app.use(helmet());
@@ -437,7 +440,7 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/athletes', athletesRoutes);
 
-io.on('event', (socket) => {
+io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('chat_message', async (msg) => {
         let result;
@@ -453,6 +456,39 @@ io.on('event', (socket) => {
 
     socket.on('submit_answer', async (data: { questionId: number, answerId: number, userId: number }) => {
         try {
+            // Vérifier si l'utilisateur existe
+            const user = await prisma.users.findUnique({
+                where: {id: data.userId}
+            });
+
+            if (!user) {
+                socket.emit('answer_error', {message: "Utilisateur non trouvé"});
+                return;
+            }
+
+            // Vérifier si la question existe
+            const question = await prisma.question.findUnique({
+                where: {id: data.questionId}
+            });
+
+            if (!question) {
+                socket.emit('answer_error', {message: "Question non trouvée"});
+                return;
+            }
+
+            // Vérifier si la réponse existe et appartient à la question
+            const answer = await prisma.answer.findFirst({
+                where: {
+                    id: data.answerId,
+                    questionId: data.questionId
+                }
+            });
+
+            if (!answer) {
+                socket.emit('answer_error', {message: "Réponse non trouvée ou invalide"});
+                return;
+            }
+
             const response = await prisma.userResponse.create({
                 data: {
                     userId: data.userId,
@@ -466,16 +502,22 @@ io.on('event', (socket) => {
                             mail: true
                         }
                     },
-                    answer: true
+                    answer: true,
+                    question: true
                 }
             });
+
+            console.log('Réponse enregistrée:', response);
 
             // Émission de la réponse à tous les clients connectés
             io.emit('new_response', response);
 
         } catch (error) {
             console.error('Erreur lors de l\'enregistrement de la réponse:', error);
-            socket.emit('answer_error', {message: "Erreur lors de l'enregistrement de la réponse"});
+            socket.emit('answer_error', {
+                message: "Erreur lors de l'enregistrement de la réponse",
+                details: error instanceof Error ? error.message : "Erreur inconnue"
+            });
         }
     });
 

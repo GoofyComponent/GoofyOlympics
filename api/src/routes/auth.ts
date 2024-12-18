@@ -1,11 +1,11 @@
-import { Router, Request, Response } from 'express';
-import { body, validationResult, matchedData } from 'express-validator';
+import {Request, Response, Router} from 'express';
+import {body, matchedData, validationResult} from 'express-validator';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client'
+import {PrismaClient} from '@prisma/client'
 
 const router = Router();
+const prisma = new PrismaClient();
 
-const prisma = new PrismaClient()
 /**
  * @swagger
  * /auth/register:
@@ -49,8 +49,7 @@ const prisma = new PrismaClient()
  *       500:
  *         description: Erreur interne du serveur
  */
-router.post(
-    "/register",
+router.post("/register",
     body("email")
         .isEmail()
         .trim()
@@ -155,8 +154,7 @@ router.post(
  *       500:
  *         description: Erreur interne du serveur
  */
-router.post(
-    "/login",
+router.post("/login",
     body("email").isEmail().trim().escape(),
     body("password").isLength({min: 6}).escape(),
     async (req: Request, res: Response) => {
@@ -196,6 +194,5 @@ router.post(
         return res.send({errors: result.array()});
     }
 );
-
 
 export default router;

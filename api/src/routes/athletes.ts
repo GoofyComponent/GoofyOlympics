@@ -1,11 +1,8 @@
-import { Router, Request, Response } from 'express';
-import { isAuthenticated } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
-import { matchedData, query, validationResult } from 'express-validator';
+import {Router} from 'express';
+import {query} from 'express-validator';
+import {getAthleteById, getAthletes} from '../controllers/athleteController';
 
 const router = Router();
-const prisma = new PrismaClient();
-const LIMIT = 10;
 
 /**
  * @swagger
@@ -119,10 +116,9 @@ const LIMIT = 10;
  *       500:
  *         description: Erreur interne du serveur
  */
-router.get(
-    "/",
+router.get('/',
     query("page").default(1).isInt({min: 1}).escape(),
-    query("limit").default(LIMIT).isInt({max: 50}).escape(),
+    query("limit").default(10).isInt({max: 50}).escape(),
     query([
         "id",
         "name",
@@ -136,54 +132,14 @@ router.get(
         "city",
         "sport",
         "event",
-        "medal",
-    ])
-        .optional()
-        .escape(),
+        "medal"
+    ]).optional().escape(),
     query("height").optional().isInt().escape(),
     query("weight").optional().isInt().escape(),
     query("optionSort").optional().isIn(["less", "more", "equal"]).escape(),
-    async (req: Request, res: Response) => {
-        const result = validationResult(req);
-        if (result.isEmpty()) {
-            const data = matchedData(req);
-            const page = parseInt(data.page as string);
-            const offset = (page - 1) * LIMIT;
-            const limit = parseInt(data.limit as string);
-
-            if (data.height || data.weight) {
-                if (!data.optionSort) {
-                    data.optionSort = "equal";
-                }
-            }
-
-            if (data.noc) {
-                data.noc = data.noc.toUpperCase();
-            }
-
-            try {
-                const athletes = await prisma.athlete_events.findMany({
-                    skip: offset,
-                    take: limit,
-                    where: {
-                        ...(data.noc && { noc: data.noc }),
-                    },
-                });
-
-                return res.send({
-                    athletes: athletes,
-                    currentPage: page,
-                    currentLimit: limit,
-                });
-            } catch (error) {
-                console.error("Error executing query", error.stack);
-                return res.status(500).send("Internal Server Error");
-            }
-        }
-        return res.send({errors: result.array()});
-    }
+    getAthletes
 );
 
-// Add more athlete-related routes here
+router.get('/:id', getAthleteById);
 
 export default router;
