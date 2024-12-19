@@ -251,42 +251,43 @@ app.get("/api/medals",
                     by: ['medal', 'noc'],
                     where: {
                         ...(data.noc ? { noc: data.noc.toUpperCase() } : {}),
-                        ...(data.year ? { year: parseInt(data.year) } : {})
+                        ...(data.year ? { year: parseInt(data.year) } : {}),
+                        medal: {
+                            in: ['Gold', 'Silver', 'Bronze']
+                        }
                     },
                     _count: {
                         medal: true
-                    },
-                    having: {
-                        medal: {
-                            not: 'NA'
-                        }
                     }
                 });
 
-                // Organiser les résultats par pays
-                const pays: Record<string, Array<{ medal: string; count: number }>> = {};
+                // Organiser les résultats par pays avec les types de médailles
+                const pays: Record<string, { Gold: number; Silver: number; Bronze: number; total: number }> = {};
+                
                 medals.forEach((element) => {
                     if (element.noc && typeof element.noc === 'string' && element.noc.length > 0) {
                         if (!pays[element.noc]) {
-                            pays[element.noc] = [];
+                            pays[element.noc] = { Gold: 0, Silver: 0, Bronze: 0, total: 0 };
                         }
 
-                        if (element.medal && element.medal !== 'NA') {
-                            pays[element.noc].push({
-                                medal: element.medal,
-                                count: element._count.medal
-                            });
+                        if (element.medal) {
+                            pays[element.noc][element.medal] = element._count.medal;
+                            pays[element.noc].total += element._count.medal;
                         }
                     }
                 });
 
-                return res.json({ medals: { medals: pays } });
+                return res.json({ 
+                    medals: {
+                        medals: pays
+                    }
+                });
             } catch (error) {
                 console.error("Error executing query", error);
                 return res.status(500).json({message: "Internal Server Error"});
             }
         }
-        return res.status(400).json({errors: result.array()});
+        return res.status(400).json({message: "Invalid parameters"});
     }
 );
 
@@ -328,29 +329,80 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const response = await prisma.userResponse.create({
-                data: {
-                    userId: data.userId,
-                    questionId: data.questionId,
-                    answerId: data.answerId
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            mail: true
+            try {
+                // Vérifier si une réponse existe déjà
+                const existingResponse = await prisma.userResponse.findUnique({
+                    where: {
+                        userId_questionId: {
+                            userId: data.userId,
+                            questionId: data.questionId
                         }
-                    },
-                    answer: true,
-                    question: true
+                    }
+                });
+
+                let response;
+                if (existingResponse) {
+                    // Mettre à jour la réponse existante
+                    response = await prisma.userResponse.update({
+                        where: {
+                            userId_questionId: {
+                                userId: data.userId,
+                                questionId: data.questionId
+                            }
+                        },
+                        data: {
+                            answerId: data.answerId
+                        },
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    mail: true
+                                }
+                            },
+                            answer: {
+                                select: {
+                                    isCorrect: true,
+                                    content: true
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    response = await prisma.userResponse.create({
+                        data: {
+                            userId: data.userId,
+                            questionId: data.questionId,
+                            answerId: data.answerId
+                        },
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    mail: true
+                                }
+                            },
+                            answer: {
+                                select: {
+                                    isCorrect: true,
+                                    content: true
+                                }
+                            }
+                        }
+                    });
                 }
-            });
 
-            console.log('Réponse enregistrée:', response);
-
-            // Émission de la réponse à tous les clients connectés
-            io.emit('new_response', response);
-
+                // Émettre la réponse
+                io.emit('new_response', {
+                    userId: response.user.id,
+                    mail: response.user.mail,
+                    isCorrect: response.answer.isCorrect,
+                    content: response.answer.content
+                });
+            } catch (error) {
+                console.error('Erreur lors de l\'enregistrement de la réponse:', error);
+                socket.emit('answer_error', {message: "Erreur lors de l'enregistrement de la réponse"});
+            }
         } catch (error) {
             console.error('Erreur lors de l\'enregistrement de la réponse:', error);
             socket.emit('answer_error', {

@@ -9,6 +9,7 @@ interface LoginData {
 
 interface RegisterData extends LoginData {
   confirmPassword?: string;
+  region?: string;
 }
 
 export class AuthApi extends BaseApi {
