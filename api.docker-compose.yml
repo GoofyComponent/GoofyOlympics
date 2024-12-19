@@ -9,8 +9,11 @@ services:
       postgres_goofy_olympics:
         condition: service_healthy
     environment:
+      - PORT = ${API_PORT:-3000} 
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres_goofy_olympics:5432/goofy_olympics?schema=public}
     volumes:
+      - ./api:/app
+      - /app/node_modules
       - api_data:/app/data
     networks:
       - join
@@ -21,10 +24,10 @@ services:
     restart: on-failure
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
@@ -37,6 +40,8 @@ services:
       - join
     volumes:
       - ${POSTGRES_PATH:-./docker/postgres-data}:/var/lib/postgresql/data:rw
+    ports:
+      - "5432:5432"
   pgadmin:
     container_name: pgadmin_goofy_olympics
     image: dpage/pgadmin4
@@ -62,7 +67,6 @@ services:
         target: /pgadmin4/servers.json
       - source: pgpass
         target: /pgpass
-
 configs:
   pgpass:
     content: postgres_goofy_olympics:5432:goofy_olympics:postgres:postgres

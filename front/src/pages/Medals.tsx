@@ -21,17 +21,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface Medal {
-  medal: string;
-  count: string;
+interface MedalCount {
+  Gold: number;
+  Silver: number;
+  Bronze: number;
+  total: number;
 }
 
 export default function MedalsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const medals = useLoaderData({ from: '/_mainapp/countries' });
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const medalsResp: {
-    [nocCodes: string]: Medal[];
-  } = medals.medals.medals;
+    [nocCodes: string]: MedalCount;
+  } = medals?.medals?.medals.medals || {};
 
   useEffect(() => {
     if (medalsResp) {
@@ -43,8 +47,9 @@ export default function MedalsPage() {
     key: 'country',
     direction: 'ascending',
   });
+
   const [currentPage, setCurrentPage] = useState(1);
-  const nocCodes = Object.keys(medalsResp);
+  const nocCodes = Object.keys(medalsResp || {});
   const itemsPerPage = 8;
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -75,8 +80,8 @@ export default function MedalsPage() {
           ? a.localeCompare(b)
           : b.localeCompare(a);
       } else if (sortConfig.key === 'total') {
-        const totalA = medalsResp[a].reduce((acc, medal) => acc + Number(medal.count), 0);
-        const totalB = medalsResp[b].reduce((acc, medal) => acc + Number(medal.count), 0);
+        const totalA = medalsResp[a]?.total || 0;
+        const totalB = medalsResp[b]?.total || 0;
         return sortConfig.direction === 'ascending' ? totalA - totalB : totalB - totalA;
       }
     }
@@ -138,29 +143,19 @@ export default function MedalsPage() {
             </TableHeader>
             <TableBody>
               {paginatedNocCodes.map((nocCode, i) => {
-                const medalCounts = medalsResp[nocCode].reduce(
-                  (acc, medal) => {
-                    acc[medal.medal] = Number(medal.count);
-                    acc.total += acc[medal.medal];
-                    return acc;
-                  },
-                  { total: 0, Gold: 0, Silver: 0, Bronze: 0 } as {
-                    [key: string]: number;
-                  },
-                );
+                const medalCounts = medalsResp[nocCode] || {
+                  Gold: 0,
+                  Silver: 0,
+                  Bronze: 0,
+                  total: 0,
+                };
 
                 return (
                   <TableRow key={i}>
                     <TableCell>{nocCode}</TableCell>
-                    <TableCell className="text-center">
-                      {medalCounts['Gold'] || 0}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {medalCounts['Silver'] || 0}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {medalCounts['Bronze'] || 0}
-                    </TableCell>
+                    <TableCell className="text-center">{medalCounts.Gold}</TableCell>
+                    <TableCell className="text-center">{medalCounts.Silver}</TableCell>
+                    <TableCell className="text-center">{medalCounts.Bronze}</TableCell>
                     <TableCell className="text-center sm:text-right">
                       {medalCounts.total}
                     </TableCell>
