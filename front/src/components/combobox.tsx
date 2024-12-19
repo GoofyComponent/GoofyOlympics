@@ -49,7 +49,7 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-[350px] p-0">
         <Command>
-          <CommandInput placeholder="Search framework..." />
+          <CommandInput placeholder="Search country..." />
           <CommandList>
             <CommandEmpty>{contextPhrase}</CommandEmpty>
             <CommandGroup>
@@ -73,6 +73,7 @@ export function Combobox({
                   <img
                     src={item.label.slice(item.label.indexOf('@&') + 2)}
                     className="h-4 w-auto ml-auto"
+                    alt={item.label.slice(0, item.label.indexOf('@&'))}
                   />
                 </CommandItem>
               ))}
