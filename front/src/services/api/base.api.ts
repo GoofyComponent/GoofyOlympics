@@ -41,7 +41,8 @@ export class BaseApi {
 
   protected async post<T>(
     url: string,
-    data?: never,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data?: any,
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await this.api.post<T>(url, data, config);
@@ -50,7 +51,8 @@ export class BaseApi {
 
   protected async put<T>(
     url: string,
-    data?: never,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data?: any,
     config?: AxiosRequestConfig,
   ): Promise<T> {
     const response = await this.api.put<T>(url, data, config);
