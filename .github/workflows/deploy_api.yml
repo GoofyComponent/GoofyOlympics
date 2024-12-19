@@ -20,7 +20,7 @@ jobs:
           rm -rf /Apps/containerDatas/olympics/docker
       - name: Remove old containers
         run: |
-          docker-compose -f api.docker-compose.yml down
+          docker compose -f api.docker-compose.yml down
           docker image prune -f
       - name: Create .env file
         run: |
@@ -28,4 +28,4 @@ jobs:
           echo "${{ secrets.API_ENV_FILE }}" >> .env
       - name: build DB
         run: |
-          docker-compose --env-file ./api/.env -f api.docker-compose.yml -p "olympics-api" up --build -d
+          docker compose --env-file ./api/.env -f api.docker-compose.yml -p "olympics-api" up --build -d
