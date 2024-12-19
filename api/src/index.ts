@@ -17,6 +17,7 @@ import authRoutes from "./routes/auth";
 import athletesRoutes from "./routes/athletes";
 import analysisRoutes from "./routes/analytics";
 import eventsRoutes from "./routes/events";
+import userRoutes from "./routes/user";
 
 const prisma = new PrismaClient();
 const LIMIT = 10;
@@ -99,7 +100,13 @@ app.use(
 );
 
 // Swagger UI
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: "GoofyOlympics API Documentation by GoofyTeam",
+  })
+);
 app.get("/api-docs.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.send(swaggerSpec);
@@ -443,6 +450,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/athletes", athletesRoutes);
 app.use("/api/analysis", analysisRoutes);
 app.use("/api/events", eventsRoutes);
+app.use("/api/user", userRoutes);
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
