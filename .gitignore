@@ -30,3 +30,5 @@ personal*
 *.env
 .env*
 data.json
+
+pnpm-lock.yaml
