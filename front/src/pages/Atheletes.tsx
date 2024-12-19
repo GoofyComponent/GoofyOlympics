@@ -1,4 +1,3 @@
-import { useLoaderData } from '@tanstack/react-router';
 import { ChevronsLeft, ChevronsRight, LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -25,44 +24,45 @@ interface Athlete {
   name: string;
   noc: string;
   age: number;
-  city: string;
-  event: string;
-  games: string;
   height: number | null;
-  medal: string;
-  season: string;
-  sex: string;
-  sport: string;
-  team: string;
   weight: number | null;
-  year: number;
+  sex: string;
+  team: string;
 }
 
 export default function AthletesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const athletesData = useLoaderData({ from: '/_mainapp/athletes' });
-
-  console.log('Athletes data:', athletesData);
-
-  const athletes: Athlete[] = athletesData.athletes.athletes;
-  const itemsPerPage = parseInt(athletesData.athletes.currentLimit);
-  const totalPages = Math.ceil(athletes.length / itemsPerPage);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
-    if (athletes.length > 0) {
-      setIsLoading(false);
-    }
-  }, [athletes]);
+    const fetchAthletes = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `https://api-olympics.stroyco.eu/api/athletes?page=${currentPage}&limit=${itemsPerPage}`,
+        );
+        const data = await response.json();
+
+        console.log('API Response:', data);
+
+        setAthletes(data.athletes || []);
+        setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
+      } catch (error) {
+        console.error('Erreur lors du chargement des athlètes:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAthletes();
+  }, [currentPage]);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
-
-  const paginatedAthletes = athletes.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
 
   return (
     <>
@@ -79,36 +79,22 @@ export default function AthletesPage() {
                 <TableHead>Nom</TableHead>
                 <TableHead>NOC</TableHead>
                 <TableHead>Âge</TableHead>
-                <TableHead>Ville</TableHead>
-                <TableHead>Événement</TableHead>
-                <TableHead>Jeux</TableHead>
                 <TableHead>Taille</TableHead>
-                <TableHead>Médaille</TableHead>
-                <TableHead>Saison</TableHead>
-                <TableHead>Sexe</TableHead>
-                <TableHead>Sport</TableHead>
-                <TableHead>Équipe</TableHead>
                 <TableHead>Poids</TableHead>
-                <TableHead>Année</TableHead>
+                <TableHead>Sexe</TableHead>
+                <TableHead>Équipe</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedAthletes.map((athlete, index) => (
-                <TableRow key={athlete.id || index}>
+              {athletes.map((athlete) => (
+                <TableRow key={athlete.id}>
                   <TableCell>{athlete.name}</TableCell>
                   <TableCell>{athlete.noc}</TableCell>
                   <TableCell>{athlete.age}</TableCell>
-                  <TableCell>{athlete.city}</TableCell>
-                  <TableCell>{athlete.event}</TableCell>
-                  <TableCell>{athlete.games}</TableCell>
                   <TableCell>{athlete.height || 'N/A'}</TableCell>
-                  <TableCell>{athlete.medal}</TableCell>
-                  <TableCell>{athlete.season}</TableCell>
-                  <TableCell>{athlete.sex}</TableCell>
-                  <TableCell>{athlete.sport}</TableCell>
-                  <TableCell>{athlete.team}</TableCell>
                   <TableCell>{athlete.weight || 'N/A'}</TableCell>
-                  <TableCell>{athlete.year}</TableCell>
+                  <TableCell>{athlete.sex}</TableCell>
+                  <TableCell>{athlete.team}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
