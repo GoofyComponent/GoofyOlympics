@@ -53,7 +53,6 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://goofyolympics.stroyco.eu",
-  "https://goofyolympics.stroyco.eu/**",
   "https://api-olympics.stroyco.eu",
 ];
 app.use(json());
@@ -438,6 +437,13 @@ io.on("connection", (socket) => {
   });
 });
 
+// Routes
+app.use("/api/questions", questionRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/athletes", athletesRoutes);
+app.use("/api/analysis", analysisRoutes);
+app.use("/api/events", eventsRoutes);
+
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
@@ -451,10 +457,3 @@ process.on("SIGINT", async () => {
 process.on("SIGTERM", async () => {
   process.exit();
 });
-
-// Routes
-app.use("/api/questions", questionRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/athletes", athletesRoutes);
-app.use("/api/analysis", analysisRoutes);
-app.use("/api/events", eventsRoutes);
